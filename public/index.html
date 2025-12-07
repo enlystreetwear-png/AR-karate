@@ -245,7 +245,7 @@
 
             try {
                 // Import the function dynamically
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 const userCredential = await module.loginUser(email, password);
                 const user = userCredential.user;
                 const role = await module.getUserRole(user.uid);
