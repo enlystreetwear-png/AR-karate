@@ -5,7 +5,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import {
   getAuth,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  createUserWithEmailAndPassword  // ADD THIS IMPORT
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import {
   getFirestore,
@@ -100,3 +101,62 @@ export async function markAttendance(studentId) {
     timestamp: serverTimestamp()
   });
 }
+
+// ================= ADD THIS NEW FUNCTION =================
+// Simple function to ensure roles exist
+export async function ensureDefaultUsersExist() {
+    console.log("Ensuring default users exist...");
+    
+    const users = [
+        { email: "admin@karate.com", password: "Admin123!", role: "admin" },
+        { email: "teacher@karate.com", password: "Teacher123!", role: "teacher" }
+    ];
+    
+    for (const user of users) {
+        try {
+            // Try to sign in (user exists)
+            const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
+            console.log(`User ${user.email} exists, checking role...`);
+            
+            // Check if role exists
+            const roleDoc = await getDoc(doc(db, "roles", userCredential.user.uid));
+            if (!roleDoc.exists()) {
+                console.log(`No role for ${user.email}, creating...`);
+                await setDoc(doc(db, "roles", userCredential.user.uid), {
+                    role: user.role,
+                    email: user.email
+                });
+                console.log(`Role created for ${user.email}`);
+            }
+            
+            await signOut(auth);
+            
+        } catch (authError) {
+            // User doesn't exist, create them
+            if (authError.code === 'auth/user-not-found') {
+                console.log(`Creating user ${user.email}...`);
+                
+                // Create auth user
+                const newUserCredential = await createUserWithEmailAndPassword(
+                    auth, user.email, user.password
+                );
+                
+                // Create role
+                await setDoc(doc(db, "roles", newUserCredential.user.uid), {
+                    role: user.role,
+                    email: user.email
+                });
+                
+                console.log(`Created ${user.role}: ${user.email}`);
+                await signOut(auth);
+            } else {
+                console.error(`Error with ${user.email}:`, authError);
+            }
+        }
+    }
+    
+    console.log("Default users ensured!");
+}
+
+// Call this function automatically
+ensureDefaultUsersExist();
