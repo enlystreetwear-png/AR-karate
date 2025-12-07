@@ -86,6 +86,15 @@
             background-color: #ef6c00;
         }
 
+        .setup-btn {
+            background-color: #4CAF50;
+            margin-top: 20px;
+        }
+
+        .setup-btn:hover {
+            background-color: #45a049;
+        }
+
         /* ---------------- STUDENT LIST ---------------- */
         .student-card {
             display: flex;
@@ -153,9 +162,15 @@
     <div id="loginView" class="view">
         <div class="container">
             <h2>Karate Attendance System</h2>
-            <input type="email" id="email" placeholder="Email">
-            <input type="password" id="password" placeholder="Password">
+            <input type="email" id="email" placeholder="Email" value="admin@karate.com">
+            <input type="password" id="password" placeholder="Password" value="Admin123!">
             <button onclick="login()">Login</button>
+            
+            <!-- Add this button -->
+            <button onclick="setupUsers()" class="setup-btn">
+                Setup Default Users (First Time Only)
+            </button>
+            
             <div id="loginMsg"></div>
         </div>
     </div>
@@ -231,6 +246,21 @@
         const scanMsg = document.getElementById("scanMsg");
 
         let html5QrcodeScanner;
+
+        // ============== ADD THIS NEW FUNCTION ==============
+        // Setup users function
+        async function setupUsers() {
+            loginMsg.innerText = "Setting up default users...";
+            try {
+                const module = await import("./assets/app.js");
+                await module.ensureDefaultUsersExist();
+                loginMsg.innerText = "Default users created! Use: admin@karate.com / Admin123! or teacher@karate.com / Teacher123!";
+            } catch (error) {
+                loginMsg.innerText = "Setup failed: " + error.message;
+                console.error("Setup error:", error);
+            }
+        }
+        // ===================================================
 
         // Login
         async function login() {
@@ -427,6 +457,7 @@
         window.logout = logout;
         window.addStudentUI = addStudentUI;
         window.deleteStudentUI = deleteStudentUI;
+        window.setupUsers = setupUsers;  // ADD THIS LINE
     </script>
 </body>
 </html>
