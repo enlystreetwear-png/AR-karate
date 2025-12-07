@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karate Attendance System</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         /* ---------------- BASE STYLES ---------------- */
         body {
@@ -21,8 +22,8 @@
 
         .container {
             width: 90%;
-            max-width: 400px;
-            margin: 50px auto;
+            max-width: 800px;
+            margin: 20px auto;
             background-color: #fff;
             border-radius: 12px;
             padding: 20px;
@@ -52,7 +53,6 @@
 
         /* ---------------- BUTTONS ---------------- */
         button {
-            width: 100%;
             padding: 12px;
             margin-top: 10px;
             background-color: #1a73e8;
@@ -70,6 +70,7 @@
 
         .logout-btn {
             background-color: #e53935;
+            width: 100%;
         }
 
         .logout-btn:hover {
@@ -89,10 +90,27 @@
         .setup-btn {
             background-color: #4CAF50;
             margin-top: 20px;
+            width: 100%;
         }
 
         .setup-btn:hover {
             background-color: #45a049;
+        }
+
+        .print-btn {
+            background-color: #9C27B0;
+            margin-left: 10px;
+            width: auto;
+        }
+
+        .print-btn:hover {
+            background-color: #7B1FA2;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         /* ---------------- STUDENT LIST ---------------- */
@@ -100,11 +118,52 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 10px;
+            padding: 15px;
             border-bottom: 1px solid #eee;
-            margin-bottom: 5px;
-            border-radius: 6px;
+            margin-bottom: 10px;
+            border-radius: 8px;
             background-color: #fafafa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .student-info {
+            flex-grow: 1;
+        }
+
+        .student-id {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
+        .student-name {
+            font-size: 18px;
+            margin: 5px 0;
+        }
+
+        .student-belt {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* ---------------- BARCODE ---------------- */
+        .barcode-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .barcode-title {
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #barcodeCanvas {
+            max-width: 100%;
+            height: auto;
         }
 
         /* ---------------- TABLE ---------------- */
@@ -116,13 +175,28 @@
 
         th, td {
             text-align: left;
-            padding: 8px;
+            padding: 12px;
             border-bottom: 1px solid #ddd;
         }
 
         th {
             background-color: #1a73e8;
             color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .present {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: #f44336;
         }
 
         /* ---------------- QR SCANNER ---------------- */
@@ -135,24 +209,64 @@
             height: 300px;
         }
 
+        .scanner-container {
+            text-align: center;
+        }
+
         /* ---------------- MESSAGES ---------------- */
         #loginMsg, #scanMsg {
             font-weight: bold;
             margin-top: 10px;
             min-height: 20px;
             text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success-msg {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-msg {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info-msg {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
 
         /* ---------------- RESPONSIVE ---------------- */
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
             .container {
                 width: 95%;
-                margin: 30px auto;
+                margin: 10px auto;
+                padding: 15px;
             }
             
             button {
                 font-size: 14px;
                 padding: 10px;
+            }
+            
+            .student-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            #reader {
+                width: 250px;
+                height: 250px;
             }
         }
     </style>
@@ -166,7 +280,6 @@
             <input type="password" id="password" placeholder="Password" value="Admin123!">
             <button onclick="login()">Login</button>
             
-            <!-- Add this button -->
             <button onclick="setupUsers()" class="setup-btn">
                 Setup Default Users (First Time Only)
             </button>
@@ -184,7 +297,7 @@
             <h3>Add New Student</h3>
             <input type="text" id="studentName" placeholder="Student Name">
             <input type="text" id="studentBelt" placeholder="Belt Color">
-            <input type="text" id="studentId" placeholder="Student ID">
+            <input type="text" id="studentId" placeholder="Student ID (for barcode)">
             <button onclick="addStudentUI()">Add Student</button>
             
             <h3>Student List</h3>
@@ -198,9 +311,11 @@
             <h2>Teacher Panel</h2>
             <button class="logout-btn" onclick="logout()">Logout</button>
             
-            <h3>Scan QR Code</h3>
-            <div id="reader"></div>
-            <div id="scanMsg"></div>
+            <div class="scanner-container">
+                <h3>Scan Student Barcode</h3>
+                <div id="reader"></div>
+                <div id="scanMsg" class="info-msg">Point camera at student barcode</div>
+            </div>
             
             <h3>Today's Attendance</h3>
             <table id="attendanceTable">
@@ -208,7 +323,9 @@
                     <tr>
                         <th>Student ID</th>
                         <th>Name</th>
-                        <th>Date</th>
+                        <th>Belt</th>
+                        <th>Status</th>
+                        <th>Time</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -221,10 +338,8 @@
     <script>
         // Initialize views
         document.addEventListener('DOMContentLoaded', function() {
-            // Show login view by default
             document.getElementById('loginView').style.display = 'block';
             
-            // Check hash for auto-redirect
             if (window.location.hash === '#adminView') {
                 showAdminView();
             } else if (window.location.hash === '#teacherView') {
@@ -232,10 +347,6 @@
             }
         });
 
-        // Import functions from your app.js (make sure the path is correct)
-        // Note: Since you're using module imports, keep the app.js as a separate file
-        // and make sure it's properly served from /public/assets/app.js
-        
         // DOM Elements
         const loginView = document.getElementById("loginView");
         const adminView = document.getElementById("adminView");
@@ -246,59 +357,56 @@
         const scanMsg = document.getElementById("scanMsg");
 
         let html5QrcodeScanner;
+        let attendanceData = {}; // Store attendance data in memory
 
-        // ============== ADD THIS NEW FUNCTION ==============
         // Setup users function
-// In your HTML file, update the setupUsers function:
-async function setupUsers() {
-    loginMsg.innerText = "Setting up default users...";
-    console.log("Starting user setup...");
-    
-    try {
-        const module = await import("./assets/app.js");
-        
-        // Try the simple setup first
-        console.log("Calling setupUsersSimple...");
-        const result = await module.setupUsersSimple();
-        console.log("Setup result:", result);
-        
-        if (result.success) {
-            loginMsg.innerText = "Users created! Testing login...";
+        async function setupUsers() {
+            loginMsg.innerText = "Setting up default users...";
+            loginMsg.className = "info-msg";
             
-            // Test the login
-            console.log("Testing login...");
-            const testResult = await module.testLogin();
-            console.log("Test login result:", testResult);
-            
-            if (testResult.success) {
-                loginMsg.innerText = "✅ Setup complete! Use: admin@karate.com / Admin123! or teacher@karate.com / Teacher123!";
-            } else {
-                loginMsg.innerText = "Users created but login test failed: " + testResult.error;
+            try {
+                const module = await import("./assets/app.js");
+                
+                const result = await module.setupUsersSimple();
+                
+                if (result.success) {
+                    loginMsg.innerText = "Users created! Testing login...";
+                    
+                    const testResult = await module.testLogin();
+                    
+                    if (testResult.success) {
+                        loginMsg.innerText = "✅ Setup complete! Use: admin@karate.com / Admin123! or teacher@karate.com / Teacher123!";
+                        loginMsg.className = "success-msg";
+                    } else {
+                        loginMsg.innerText = "Users created but login test failed: " + testResult.error;
+                        loginMsg.className = "error-msg";
+                    }
+                } else {
+                    loginMsg.innerText = "Setup failed: " + result.error;
+                    loginMsg.className = "error-msg";
+                }
+                
+            } catch (error) {
+                console.error("Full setup error:", error);
+                loginMsg.innerText = "Setup failed: " + error.message;
+                loginMsg.className = "error-msg";
             }
-        } else {
-            loginMsg.innerText = "Setup failed: " + result.error;
         }
-        
-    } catch (error) {
-        console.error("Full setup error:", error);
-        loginMsg.innerText = "Setup failed: " + error.message;
-    }
-}
-        // ===================================================
 
         // Login
         async function login() {
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             loginMsg.innerText = "";
+            loginMsg.className = "";
 
             if (!email || !password) { 
-                loginMsg.innerText="Enter email & password"; 
+                loginMsg.innerText = "Enter email & password";
+                loginMsg.className = "error-msg";
                 return; 
             }
 
             try {
-                // Import the function dynamically
                 const module = await import("./assets/app.js");
                 const userCredential = await module.loginUser(email, password);
                 const user = userCredential.user;
@@ -310,65 +418,49 @@ async function setupUsers() {
                     showTeacherView();
                 } else {
                     loginMsg.innerText = "You are not allowed to login.";
+                    loginMsg.className = "error-msg";
                 }
 
             } catch (error) {
                 loginMsg.innerText = "Login failed: " + error.message;
+                loginMsg.className = "error-msg";
                 console.error(error);
             }
         }
 
         // Logout
-// Logout - FIXED VERSION
-async function logout() {
-    console.log("Logout clicked");
-    
-    // Stop QR scanner if active
-    if(html5QrcodeScanner) {
-        console.log("Stopping QR scanner...");
-        try {
-            html5QrcodeScanner.clear();
-            console.log("QR scanner stopped");
-        } catch (e) {
-            console.error("Error stopping scanner:", e);
+        async function logout() {
+            console.log("Logout clicked");
+            
+            if(html5QrcodeScanner) {
+                try {
+                    html5QrcodeScanner.clear();
+                } catch (e) {
+                    console.error("Error stopping scanner:", e);
+                }
+            }
+            
+            try {
+                const module = await import("./assets/app.js");
+                await module.logoutUser();
+                
+                adminView.style.display = "none";
+                teacherView.style.display = "none";
+                loginView.style.display = "block";
+                window.location.hash = '';
+                
+                document.getElementById("email").value = "admin@karate.com";
+                document.getElementById("password").value = "";
+                
+            } catch (error) {
+                console.error("Logout error:", error);
+                adminView.style.display = "none";
+                teacherView.style.display = "none";
+                loginView.style.display = "block";
+                window.location.hash = '';
+            }
         }
-    }
-    
-    try {
-        // Use consistent import path
-        console.log("Importing module...");
-        const module = await import("./assets/app.js");
-        
-        console.log("Calling logoutUser...");
-        await module.logoutUser();
-        console.log("Firebase logout successful");
-        
-        // Hide all panels and show login
-        adminView.style.display = "none";
-        teacherView.style.display = "none";
-        loginView.style.display = "block";
-        
-        // Clear hash from URL
-        window.location.hash = '';
-        
-        // Clear any stored credentials
-        document.getElementById("email").value = "admin@karate.com";
-        document.getElementById("password").value = "";
-        
-        console.log("Logout complete, showing login screen");
-        
-    } catch (error) {
-        console.error("Logout error details:", error);
-        
-        // Even if Firebase logout fails, show login screen
-        adminView.style.display = "none";
-        teacherView.style.display = "none";
-        loginView.style.display = "block";
-        window.location.hash = '';
-        
-        loginMsg.innerText = "Logged out (with some errors)";
-    }
-}
+
         // Show Admin
         async function showAdminView() {
             loginView.style.display = "none";
@@ -388,31 +480,139 @@ async function logout() {
             startQRScanner();
         }
 
+        // Generate barcode for student
+        function generateBarcode(studentId, studentName) {
+            // Create a temporary canvas for barcode
+            const canvas = document.createElement('canvas');
+            
+            // Generate CODE128 barcode
+            JsBarcode(canvas, studentId, {
+                format: "CODE128",
+                width: 2,
+                height: 100,
+                displayValue: true,
+                fontSize: 16,
+                text: `${studentId} - ${studentName}`,
+                background: "#ffffff",
+                lineColor: "#000000",
+                margin: 10
+            });
+            
+            return canvas;
+        }
+
+        // Print barcode
+        function printBarcode(studentId, studentName) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print Barcode - ${studentName}</title>
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 20px;
+                        }
+                        .barcode-container { 
+                            margin: 20px auto; 
+                            max-width: 400px;
+                        }
+                        .student-info { 
+                            margin-bottom: 20px; 
+                        }
+                        @media print {
+                            button { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="student-info">
+                        <h2>${studentName}</h2>
+                        <h3>Student ID: ${studentId}</h3>
+                    </div>
+                    <div class="barcode-container">
+                        <svg id="barcode"></svg>
+                    </div>
+                    <button onclick="window.print()">Print Barcode</button>
+                    <script>
+                        JsBarcode("#barcode", "${studentId}", {
+                            format: "CODE128",
+                            width: 3,
+                            height: 150,
+                            displayValue: true,
+                            fontSize: 20,
+                            text: "${studentId} - ${studentName}",
+                            background: "#ffffff",
+                            lineColor: "#000000",
+                            margin: 20
+                        });
+                        // Auto-print after loading
+                        setTimeout(() => { window.print(); }, 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
         // Load students for admin
         async function loadStudents() {
             try {
                 const module = await import("./assets/app.js");
                 const students = await module.getAllStudents();
                 studentListDiv.innerHTML = "";
+                
+                if (students.length === 0) {
+                    studentListDiv.innerHTML = '<p style="text-align: center; color: #666;">No students added yet.</p>';
+                    return;
+                }
+                
                 students.forEach(student => {
                     const div = document.createElement("div");
                     div.className = "student-card";
+                    
+                    // Create barcode canvas
+                    const barcodeCanvas = generateBarcode(student.id, student.name);
+                    
                     div.innerHTML = `
-                        <span>${student.name} (${student.id}) - ${student.belt}</span>
-                        <button class="delete-btn" onclick="deleteStudentUI('${student.id}')">Delete</button>
+                        <div class="student-info">
+                            <div class="student-name">${student.name}</div>
+                            <div class="student-id">ID: ${student.id}</div>
+                            <div class="student-belt">Belt: ${student.belt}</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="print-btn" onclick="printBarcode('${student.id}', '${student.name}')">
+                                Print Barcode
+                            </button>
+                            <button class="delete-btn" onclick="deleteStudentUI('${student.id}')">
+                                Delete
+                            </button>
+                        </div>
                     `;
+                    
+                    // Add barcode preview
+                    const barcodeContainer = document.createElement('div');
+                    barcodeContainer.className = 'barcode-container';
+                    barcodeContainer.innerHTML = '<div class="barcode-title">Barcode Preview:</div>';
+                    barcodeContainer.appendChild(barcodeCanvas);
+                    
+                    div.appendChild(barcodeContainer);
                     studentListDiv.appendChild(div);
                 });
+                
             } catch (error) {
                 console.error("Error loading students:", error);
+                studentListDiv.innerHTML = `<p class="error-msg">Error loading students: ${error.message}</p>`;
             }
         }
 
         // Add student
         async function addStudentUI() {
-            const name = document.getElementById("studentName").value;
-            const belt = document.getElementById("studentBelt").value;
-            const id = document.getElementById("studentId").value;
+            const name = document.getElementById("studentName").value.trim();
+            const belt = document.getElementById("studentBelt").value.trim();
+            const id = document.getElementById("studentId").value.trim();
 
             if (!name || !belt || !id) {
                 alert("Please fill all fields");
@@ -422,10 +622,15 @@ async function logout() {
             try {
                 const module = await import("./assets/app.js");
                 await module.addStudent(name, belt, id);
+                
+                // Clear form
                 document.getElementById("studentName").value = "";
                 document.getElementById("studentBelt").value = "";
                 document.getElementById("studentId").value = "";
+                
+                // Reload students
                 await loadStudents();
+                
             } catch (error) {
                 console.error("Error adding student:", error);
                 alert("Error adding student: " + error.message);
@@ -446,25 +651,69 @@ async function logout() {
             }
         }
 
-        // Load attendance
+        // Load attendance with real data
         async function loadAttendance() {
             try {
                 const module = await import("./assets/app.js");
+                
+                // Get all students
                 const students = await module.getAllStudents();
-                attendanceTable.innerHTML = "";
+                
+                // Get today's attendance from Firestore
                 const today = new Date().toISOString().split("T")[0];
-
+                const attendanceSnapshot = await module.getTodaysAttendance(today);
+                
+                // Clear table
+                attendanceTable.innerHTML = "";
+                
+                if (students.length === 0) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td colspan="5" style="text-align: center; color: #666;">No students registered.</td>`;
+                    attendanceTable.appendChild(row);
+                    return;
+                }
+                
+                // Create a map of attendance for quick lookup
+                const attendanceMap = {};
+                attendanceSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    attendanceMap[data.studentId] = {
+                        time: data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString() : 'N/A',
+                        date: data.date
+                    };
+                });
+                
+                // Add rows for each student
                 students.forEach(student => {
                     const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${student.id}</td>
-                        <td>${student.name}</td>
-                        <td>${today}</td>
-                    `;
+                    const attendance = attendanceMap[student.id];
+                    
+                    if (attendance) {
+                        // Student is present
+                        row.innerHTML = `
+                            <td>${student.id}</td>
+                            <td>${student.name}</td>
+                            <td>${student.belt}</td>
+                            <td class="present">✅ Present</td>
+                            <td>${attendance.time}</td>
+                        `;
+                    } else {
+                        // Student is absent
+                        row.innerHTML = `
+                            <td>${student.id}</td>
+                            <td>${student.name}</td>
+                            <td>${student.belt}</td>
+                            <td class="absent">❌ Absent</td>
+                            <td>-</td>
+                        `;
+                    }
+                    
                     attendanceTable.appendChild(row);
                 });
+                
             } catch (error) {
                 console.error("Error loading attendance:", error);
+                attendanceTable.innerHTML = `<tr><td colspan="5" class="error-msg">Error loading attendance: ${error.message}</td></tr>`;
             }
         }
 
@@ -481,21 +730,41 @@ async function logout() {
                 { facingMode: "environment" },
                 config,
                 async (decodedText, decodedResult) => {
-                    scanMsg.innerText = `Scanned: ${decodedText}`;
+                    // Show scanning message
+                    scanMsg.innerText = `Scanning: ${decodedText}`;
+                    scanMsg.className = "info-msg";
+                    
                     try {
                         const module = await import("./assets/app.js");
+                        
+                        // Mark attendance
                         await module.markAttendance(decodedText);
+                        
+                        // Show success message
+                        scanMsg.innerText = `✅ Attendance marked for student ID: ${decodedText}`;
+                        scanMsg.className = "success-msg";
+                        
+                        // Refresh attendance table
                         await loadAttendance();
+                        
+                        // Clear message after 3 seconds
+                        setTimeout(() => {
+                            scanMsg.innerText = "Point camera at student barcode";
+                            scanMsg.className = "info-msg";
+                        }, 3000);
+                        
                     } catch (error) {
                         console.error("Error marking attendance:", error);
-                        scanMsg.innerText = "Error: " + error.message;
+                        scanMsg.innerText = `❌ Error: ${error.message}`;
+                        scanMsg.className = "error-msg";
                     }
                 },
                 (errorMessage) => {
-                    // ignore decode errors
+                    // Ignore decode errors during scanning
                 }
             ).catch(err => {
                 scanMsg.innerText = "Camera init failed: " + err;
+                scanMsg.className = "error-msg";
                 console.error("QR Scanner error:", err);
             });
         }
@@ -512,12 +781,13 @@ async function logout() {
             }
         });
 
-        // Make functions globally available for onclick handlers
+        // Make functions globally available
         window.login = login;
         window.logout = logout;
         window.addStudentUI = addStudentUI;
         window.deleteStudentUI = deleteStudentUI;
-        window.setupUsers = setupUsers;  // ADD THIS LINE
+        window.setupUsers = setupUsers;
+        window.printBarcode = printBarcode;
     </script>
 </body>
 </html>
