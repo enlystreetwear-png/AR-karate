@@ -1,4 +1,6 @@
-// SIMPLE VERSION - assets/app.js
+// Make sure to save this as assets/app.js
+
+// ----------------- FIREBASE CONFIG -----------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getAuth,
@@ -14,7 +16,9 @@ import {
   collection,
   deleteDoc,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -31,127 +35,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 1. FIRST, let's create a SIMPLE setup function
-export async function setupUsersSimple() {
-    console.log("Starting SIMPLE setup...");
-    
-    try {
-        // Sign out any existing user first
-        await signOut(auth);
-        console.log("Signed out any existing user");
-        
-        // Create admin user
-        console.log("Creating admin user...");
-        try {
-            const adminCred = await createUserWithEmailAndPassword(
-                auth, 
-                "admin@karate.com", 
-                "Admin123!"
-            );
-            console.log("Admin created:", adminCred.user.uid);
-            
-            // Create admin role
-            await setDoc(doc(db, "roles", adminCred.user.uid), {
-                role: "admin",
-                email: "admin@karate.com",
-                createdAt: new Date().toISOString()
-            });
-            console.log("Admin role created");
-            
-            // Sign out admin
-            await signOut(auth);
-        } catch (adminError) {
-            if (adminError.code === 'auth/email-already-in-use') {
-                console.log("Admin already exists");
-            } else {
-                console.error("Admin creation error:", adminError);
-            }
-        }
-        
-        // Create teacher user
-        console.log("Creating teacher user...");
-        try {
-            const teacherCred = await createUserWithEmailAndPassword(
-                auth, 
-                "teacher@karate.com", 
-                "Teacher123!"
-            );
-            console.log("Teacher created:", teacherCred.user.uid);
-            
-            // Create teacher role
-            await setDoc(doc(db, "roles", teacherCred.user.uid), {
-                role: "teacher",
-                email: "teacher@karate.com",
-                createdAt: new Date().toISOString()
-            });
-            console.log("Teacher role created");
-            
-            // Sign out teacher
-            await signOut(auth);
-        } catch (teacherError) {
-            if (teacherError.code === 'auth/email-already-in-use') {
-                console.log("Teacher already exists");
-            } else {
-                console.error("Teacher creation error:", teacherError);
-            }
-        }
-        
-        console.log("SIMPLE setup complete!");
-        return { success: true, message: "Setup complete" };
-        
-    } catch (error) {
-        console.error("Setup error:", error);
-        return { success: false, error: error.message };
-    }
-}
-
-// 2. Test login function
-export async function testLogin() {
-    console.log("Testing login...");
-    try {
-        // Test admin login
-        const adminCred = await signInWithEmailAndPassword(
-            auth, 
-            "admin@karate.com", 
-            "Admin123!"
-        );
-        console.log("Admin login successful:", adminCred.user.uid);
-        
-        // Get admin role
-        const adminRoleDoc = await getDoc(doc(db, "roles", adminCred.user.uid));
-        console.log("Admin role exists:", adminRoleDoc.exists());
-        if (adminRoleDoc.exists()) {
-            console.log("Admin role:", adminRoleDoc.data().role);
-        }
-        
-        await signOut(auth);
-        
-        // Test teacher login
-        const teacherCred = await signInWithEmailAndPassword(
-            auth, 
-            "teacher@karate.com", 
-            "Teacher123!"
-        );
-        console.log("Teacher login successful:", teacherCred.user.uid);
-        
-        // Get teacher role
-        const teacherRoleDoc = await getDoc(doc(db, "roles", teacherCred.user.uid));
-        console.log("Teacher role exists:", teacherRoleDoc.exists());
-        if (teacherRoleDoc.exists()) {
-            console.log("Teacher role:", teacherRoleDoc.data().role);
-        }
-        
-        await signOut(auth);
-        
-        return { success: true, message: "Test login successful" };
-        
-    } catch (error) {
-        console.error("Test login failed:", error);
-        return { success: false, error: error.message };
-    }
-}
-
-// 3. Original functions (keep these)
+// ----------------- AUTH FUNCTIONS -----------------
 export async function loginUser(email, password) {
   return await signInWithEmailAndPassword(auth, email, password);
 }
@@ -180,8 +64,14 @@ export function autoRedirect() {
   });
 }
 
+// ----------------- STUDENT MANAGEMENT -----------------
 export async function addStudent(name, belt, id) {
-  await setDoc(doc(db, "students", id), { name, belt, id });
+  await setDoc(doc(db, "students", id), { 
+    name, 
+    belt, 
+    id,
+    createdAt: serverTimestamp()
+  });
 }
 
 export async function deleteStudent(id) {
@@ -197,26 +87,181 @@ export async function getAllStudents() {
   return students;
 }
 
+// ----------------- ATTENDANCE FUNCTIONS -----------------
 export async function markAttendance(studentId) {
-  const studentRef = doc(db, "students", studentId);
-  const studentSnap = await getDoc(studentRef);
+  try {
+    console.log("Marking attendance for student:", studentId);
+    
+    // Check if student exists
+    const studentRef = doc(db, "students", studentId);
+    const studentSnap = await getDoc(studentRef);
 
-  if(!studentSnap.exists()) return;
+    if (!studentSnap.exists()) {
+      throw new Error("Student not found");
+    }
 
-  const studentData = studentSnap.data();
-  const today = new Date().toISOString().split("T")[0];
+    const studentData = studentSnap.data();
+    const today = new Date().toISOString().split("T")[0];
+    const attendanceId = `${studentId}-${today}`;
 
-  const attendanceRef = doc(db, "attendance", studentId + "-" + today);
-  await setDoc(attendanceRef, {
-    studentId: studentData.id,
-    name: studentData.name,
-    date: today,
-    timestamp: serverTimestamp()
-  });
+    // Check if already marked today
+    const existingAttendanceRef = doc(db, "attendance", attendanceId);
+    const existingSnap = await getDoc(existingAttendanceRef);
+    
+    if (existingSnap.exists()) {
+      throw new Error("Attendance already marked today");
+    }
+
+    // Mark attendance
+    const attendanceRef = doc(db, "attendance", attendanceId);
+    await setDoc(attendanceRef, {
+      studentId: studentData.id,
+      name: studentData.name,
+      belt: studentData.belt,
+      date: today,
+      timestamp: serverTimestamp()
+    });
+    
+    console.log("Attendance marked successfully for:", studentData.name);
+    return { success: true, studentName: studentData.name };
+    
+  } catch (error) {
+    console.error("Error marking attendance:", error);
+    throw error;
+  }
 }
 
-// 4. Call simple setup on load
+// Get today's attendance
+export async function getTodaysAttendance(date) {
+  try {
+    const today = date || new Date().toISOString().split("T")[0];
+    
+    // Query attendance for today
+    const attendanceRef = collection(db, "attendance");
+    const q = query(attendanceRef, where("date", "==", today));
+    const snapshot = await getDocs(q);
+    
+    return snapshot;
+  } catch (error) {
+    console.error("Error getting today's attendance:", error);
+    throw error;
+  }
+}
+
+// Get attendance report for admin
+export async function getAttendanceReport(startDate, endDate) {
+  try {
+    const attendanceRef = collection(db, "attendance");
+    const q = query(
+      attendanceRef, 
+      where("date", ">=", startDate),
+      where("date", "<=", endDate)
+    );
+    
+    const snapshot = await getDocs(q);
+    const attendance = [];
+    snapshot.forEach(doc => {
+      attendance.push(doc.data());
+    });
+    
+    return attendance;
+  } catch (error) {
+    console.error("Error getting attendance report:", error);
+    throw error;
+  }
+}
+
+// ----------------- USER SETUP FUNCTIONS -----------------
+export async function setupUsersSimple() {
+  console.log("Starting SIMPLE setup...");
+  
+  try {
+    await signOut(auth);
+    
+    // Create admin
+    try {
+      const adminCred = await createUserWithEmailAndPassword(
+        auth, 
+        "admin@karate.com", 
+        "Admin123!"
+      );
+      
+      await setDoc(doc(db, "roles", adminCred.user.uid), {
+        role: "admin",
+        email: "admin@karate.com",
+        createdAt: new Date().toISOString()
+      });
+      
+      await signOut(auth);
+    } catch (adminError) {
+      if (adminError.code !== 'auth/email-already-in-use') {
+        throw adminError;
+      }
+    }
+    
+    // Create teacher
+    try {
+      const teacherCred = await createUserWithEmailAndPassword(
+        auth, 
+        "teacher@karate.com", 
+        "Teacher123!"
+      );
+      
+      await setDoc(doc(db, "roles", teacherCred.user.uid), {
+        role: "teacher",
+        email: "teacher@karate.com",
+        createdAt: new Date().toISOString()
+      });
+      
+      await signOut(auth);
+    } catch (teacherError) {
+      if (teacherError.code !== 'auth/email-already-in-use') {
+        throw teacherError;
+      }
+    }
+    
+    return { success: true, message: "Setup complete" };
+    
+  } catch (error) {
+    console.error("Setup error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function testLogin() {
+  console.log("Testing login...");
+  try {
+    // Test admin login
+    const adminCred = await signInWithEmailAndPassword(
+      auth, 
+      "admin@karate.com", 
+      "Admin123!"
+    );
+    
+    const adminRoleDoc = await getDoc(doc(db, "roles", adminCred.user.uid));
+    console.log("Admin role exists:", adminRoleDoc.exists());
+    
+    await signOut(auth);
+    
+    // Test teacher login
+    const teacherCred = await signInWithEmailAndPassword(
+      auth, 
+      "teacher@karate.com", 
+      "Teacher123!"
+    );
+    
+    const teacherRoleDoc = await getDoc(doc(db, "roles", teacherCred.user.uid));
+    console.log("Teacher role exists:", teacherRoleDoc.exists());
+    
+    await signOut(auth);
+    
+    return { success: true, message: "Test login successful" };
+    
+  } catch (error) {
+    console.error("Test login failed:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Auto setup on load
 console.log("Firebase app initialized");
-setupUsersSimple().then(result => {
-    console.log("Auto-setup result:", result);
-});
