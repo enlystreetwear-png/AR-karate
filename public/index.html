@@ -319,20 +319,56 @@ async function setupUsers() {
         }
 
         // Logout
-        async function logout() {
-            if(html5QrcodeScanner) html5QrcodeScanner.clear();
-            try {
-                const module = await import("/public/assets/app.js");
-                await module.logoutUser();
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-            adminView.style.display = "none";
-            teacherView.style.display = "none";
-            loginView.style.display = "block";
-            window.location.hash = '';
+// Logout - FIXED VERSION
+async function logout() {
+    console.log("Logout clicked");
+    
+    // Stop QR scanner if active
+    if(html5QrcodeScanner) {
+        console.log("Stopping QR scanner...");
+        try {
+            html5QrcodeScanner.clear();
+            console.log("QR scanner stopped");
+        } catch (e) {
+            console.error("Error stopping scanner:", e);
         }
-
+    }
+    
+    try {
+        // Use consistent import path
+        console.log("Importing module...");
+        const module = await import("./assets/app.js");
+        
+        console.log("Calling logoutUser...");
+        await module.logoutUser();
+        console.log("Firebase logout successful");
+        
+        // Hide all panels and show login
+        adminView.style.display = "none";
+        teacherView.style.display = "none";
+        loginView.style.display = "block";
+        
+        // Clear hash from URL
+        window.location.hash = '';
+        
+        // Clear any stored credentials
+        document.getElementById("email").value = "admin@karate.com";
+        document.getElementById("password").value = "";
+        
+        console.log("Logout complete, showing login screen");
+        
+    } catch (error) {
+        console.error("Logout error details:", error);
+        
+        // Even if Firebase logout fails, show login screen
+        adminView.style.display = "none";
+        teacherView.style.display = "none";
+        loginView.style.display = "block";
+        window.location.hash = '';
+        
+        loginMsg.innerText = "Logged out (with some errors)";
+    }
+}
         // Show Admin
         async function showAdminView() {
             loginView.style.display = "none";
@@ -355,7 +391,7 @@ async function setupUsers() {
         // Load students for admin
         async function loadStudents() {
             try {
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 const students = await module.getAllStudents();
                 studentListDiv.innerHTML = "";
                 students.forEach(student => {
@@ -384,7 +420,7 @@ async function setupUsers() {
             }
 
             try {
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 await module.addStudent(name, belt, id);
                 document.getElementById("studentName").value = "";
                 document.getElementById("studentBelt").value = "";
@@ -401,7 +437,7 @@ async function setupUsers() {
             if (!confirm("Are you sure you want to delete this student?")) return;
             
             try {
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 await module.deleteStudent(id);
                 await loadStudents();
             } catch (error) {
@@ -413,7 +449,7 @@ async function setupUsers() {
         // Load attendance
         async function loadAttendance() {
             try {
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 const students = await module.getAllStudents();
                 attendanceTable.innerHTML = "";
                 const today = new Date().toISOString().split("T")[0];
@@ -447,7 +483,7 @@ async function setupUsers() {
                 async (decodedText, decodedResult) => {
                     scanMsg.innerText = `Scanned: ${decodedText}`;
                     try {
-                        const module = await import("/public/assets/app.js");
+                        const module = await import("./assets/app.js");
                         await module.markAttendance(decodedText);
                         await loadAttendance();
                     } catch (error) {
@@ -467,7 +503,7 @@ async function setupUsers() {
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                const module = await import("/public/assets/app.js");
+                const module = await import("./assets/app.js");
                 if (module.autoRedirect) {
                     module.autoRedirect();
                 }
