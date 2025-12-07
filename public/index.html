@@ -1,0 +1,144 @@
+<script type="module">
+import { loginUser, logoutUser, getUserRole, addStudent, deleteStudent, getAllStudents, markAttendance, autoRedirect } from "public/assets/app.js";
+
+// DOM Elements
+const loginView = document.getElementById("loginView");
+const adminView = document.getElementById("adminView");
+const teacherView = document.getElementById("teacherView");
+
+const loginMsg = document.getElementById("loginMsg");
+const studentListDiv = document.getElementById("studentList");
+const attendanceTable = document.getElementById("attendanceTable");
+const scanMsg = document.getElementById("scanMsg");
+
+let html5QrcodeScanner;
+
+// Login
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  loginMsg.innerText = "";
+
+  if (!email || !password) { loginMsg.innerText="Enter email & password"; return; }
+
+  try {
+    const userCredential = await loginUser(email, password);
+    const user = userCredential.user;
+    const role = await getUserRole(user.uid);
+
+    if (role === "admin") {
+      showAdminView();
+    } else if (role === "teacher") {
+      showTeacherView();
+    } else {
+      loginMsg.innerText = "You are not allowed to login.";
+    }
+
+  } catch (error) {
+    loginMsg.innerText = "Login failed: " + error.message;
+  }
+}
+
+// Logout
+async function logout() {
+  if(html5QrcodeScanner) html5QrcodeScanner.stop();
+  await logoutUser();
+  adminView.style.display = "none";
+  teacherView.style.display = "none";
+  loginView.style.display = "block";
+}
+
+// Show Admin
+async function showAdminView() {
+  loginView.style.display = "none";
+  adminView.style.display = "block";
+  await loadStudents();
+}
+
+// Show Teacher
+async function showTeacherView() {
+  loginView.style.display = "none";
+  teacherView.style.display = "block";
+  await loadAttendance();
+  startQRScanner();
+}
+
+// Load students for admin
+async function loadStudents() {
+  const students = await getAllStudents();
+  studentListDiv.innerHTML = "";
+  students.forEach(student => {
+    const div = document.createElement("div");
+    div.className = "student-card";
+    div.innerHTML = `
+      <span>${student.name} (${student.id}) - ${student.belt}</span>
+      <button class="delete-btn" onclick="deleteStudentUI('${student.id}')">Delete</button>
+    `;
+    studentListDiv.appendChild(div);
+  });
+}
+
+// Add student
+async function addStudentUI() {
+  const name = document.getElementById("studentName").value;
+  const belt = document.getElementById("studentBelt").value;
+  const id = document.getElementById("studentId").value;
+
+  if (!name || !belt || !id) return alert("Fill all fields");
+
+  await addStudent(name, belt, id);
+  document.getElementById("studentName").value = "";
+  document.getElementById("studentBelt").value = "";
+  document.getElementById("studentId").value = "";
+  loadStudents();
+}
+
+// Delete student
+async function deleteStudentUI(id) {
+  await deleteStudent(id);
+  loadStudents();
+}
+
+// Load attendance
+async function loadAttendance() {
+  const students = await getAllStudents();
+  attendanceTable.innerHTML = "";
+  const today = new Date().toISOString().split("T")[0];
+
+  students.forEach(student => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${student.id}</td>
+      <td>${student.name}</td>
+      <td>${today}</td>
+    `;
+    attendanceTable.appendChild(row);
+  });
+}
+
+// Start QR Scanner
+function startQRScanner() {
+  if(html5QrcodeScanner) html5QrcodeScanner.stop();
+
+  html5QrcodeScanner = new Html5Qrcode("reader");
+  const config = { fps: 10, qrbox: 250 };
+
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    config,
+    async (decodedText, decodedResult) => {
+      scanMsg.innerText = `Scanned: ${decodedText}`;
+      await markAttendance(decodedText); // mark in Firestore
+      loadAttendance(); // refresh table
+    },
+    (errorMessage) => {
+      // ignore decode errors
+    }
+  ).catch(err => {
+    scanMsg.innerText = "Camera init failed: " + err;
+  });
+}
+
+// Auto redirect if user is already logged in
+autoRedirect();
+</script>
