@@ -1,0 +1,131 @@
+/* ---------------- BASE STYLES ---------------- */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f8f8f8; /* light gray */
+  margin: 0;
+  padding: 0;
+}
+
+
+h2, h3 {
+  text-align: center;
+  color: #333;
+}
+
+.container {
+  width: 90%;
+  max-width: 400px;
+  margin: 50px auto;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* ---------------- INPUTS ---------------- */
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  width: 100%;
+  padding: 12px 10px;
+  margin: 8px 0 15px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+input::placeholder {
+  color: #aaa;
+}
+
+/* ---------------- BUTTONS ---------------- */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background-color: #1a73e8;
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #1669c1;
+}
+
+.logout-btn {
+  background-color: #e53935;
+}
+
+.logout-btn:hover {
+  background-color: #c62828;
+}
+
+.delete-btn {
+  background-color: #f57c00;
+  margin-left: 10px;
+}
+
+.delete-btn:hover {
+  background-color: #ef6c00;
+}
+
+/* ---------------- STUDENT LIST ---------------- */
+.student-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 5px;
+  border-radius: 6px;
+  background-color: #fafafa;
+}
+
+/* ---------------- TABLE ---------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #1a73e8;
+  color: white;
+}
+
+/* ---------------- QR SCANNER ---------------- */
+#reader {
+  margin: 20px auto;
+  border: 2px dashed #1a73e8;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* ---------------- MESSAGES ---------------- */
+#loginMsg, #scanMsg {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+@media (max-width: 480px) {
+  .container {
+    width: 95%;
+    margin: 30px auto;
+  }
+  
+  button {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
