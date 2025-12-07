@@ -6,7 +6,7 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
-  createUserWithEmailAndPassword  // ADD THIS IMPORT
+  createUserWithEmailAndPassword  // MAKE SURE THIS IS IMPORTED
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import {
   getFirestore,
@@ -102,7 +102,7 @@ export async function markAttendance(studentId) {
   });
 }
 
-// ================= ADD THIS NEW FUNCTION =================
+// ================= ADD THIS FUNCTION =================
 // Simple function to ensure roles exist
 export async function ensureDefaultUsersExist() {
     console.log("Ensuring default users exist...");
