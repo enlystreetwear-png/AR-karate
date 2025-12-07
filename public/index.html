@@ -249,17 +249,41 @@
 
         // ============== ADD THIS NEW FUNCTION ==============
         // Setup users function
-        async function setupUsers() {
-            loginMsg.innerText = "Setting up default users...";
-            try {
-                const module = await import("./assets/app.js");
-                await module.ensureDefaultUsersExist();
-                loginMsg.innerText = "Default users created! Use: admin@karate.com / Admin123! or teacher@karate.com / Teacher123!";
-            } catch (error) {
-                loginMsg.innerText = "Setup failed: " + error.message;
-                console.error("Setup error:", error);
+// In your HTML file, update the setupUsers function:
+async function setupUsers() {
+    loginMsg.innerText = "Setting up default users...";
+    console.log("Starting user setup...");
+    
+    try {
+        const module = await import("./assets/app.js");
+        
+        // Try the simple setup first
+        console.log("Calling setupUsersSimple...");
+        const result = await module.setupUsersSimple();
+        console.log("Setup result:", result);
+        
+        if (result.success) {
+            loginMsg.innerText = "Users created! Testing login...";
+            
+            // Test the login
+            console.log("Testing login...");
+            const testResult = await module.testLogin();
+            console.log("Test login result:", testResult);
+            
+            if (testResult.success) {
+                loginMsg.innerText = "✅ Setup complete! Use: admin@karate.com / Admin123! or teacher@karate.com / Teacher123!";
+            } else {
+                loginMsg.innerText = "Users created but login test failed: " + testResult.error;
             }
+        } else {
+            loginMsg.innerText = "Setup failed: " + result.error;
         }
+        
+    } catch (error) {
+        console.error("Full setup error:", error);
+        loginMsg.innerText = "Setup failed: " + error.message;
+    }
+}
         // ===================================================
 
         // Login
