@@ -265,3 +265,16 @@ export async function testLogin() {
 
 // Auto setup on load
 console.log("Firebase app initialized");
+
+// Add to your existing app.js file
+export async function deleteAttendance(attendanceId) {
+  try {
+    console.log("Deleting attendance record:", attendanceId);
+    await deleteDoc(doc(db, "attendance", attendanceId));
+    console.log("Attendance record deleted successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting attendance:", error);
+    throw error;
+  }
+}
