@@ -1,12 +1,10 @@
-// Make sure to save this as assets/app.js
-
-// ----------------- FIREBASE CONFIG -----------------
+// SIMPLE VERSION - assets/app.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
-  createUserWithEmailAndPassword  // MAKE SURE THIS IS IMPORTED
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import {
   getFirestore,
@@ -14,13 +12,11 @@ import {
   setDoc,
   getDoc,
   collection,
-  addDoc,
   deleteDoc,
   getDocs,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Replace with your Firebase project config
 const firebaseConfig = {
   apiKey: "AIzaSyA4OVgeKWvAIklI8hTibj3kT3C9KgBsp2w",
   authDomain: "ar-karate-e580f.firebaseapp.com",
@@ -31,12 +27,131 @@ const firebaseConfig = {
   measurementId: "G-7K6PYQ1HWB"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ----------------- AUTH FUNCTIONS -----------------
+// 1. FIRST, let's create a SIMPLE setup function
+export async function setupUsersSimple() {
+    console.log("Starting SIMPLE setup...");
+    
+    try {
+        // Sign out any existing user first
+        await signOut(auth);
+        console.log("Signed out any existing user");
+        
+        // Create admin user
+        console.log("Creating admin user...");
+        try {
+            const adminCred = await createUserWithEmailAndPassword(
+                auth, 
+                "admin@karate.com", 
+                "Admin123!"
+            );
+            console.log("Admin created:", adminCred.user.uid);
+            
+            // Create admin role
+            await setDoc(doc(db, "roles", adminCred.user.uid), {
+                role: "admin",
+                email: "admin@karate.com",
+                createdAt: new Date().toISOString()
+            });
+            console.log("Admin role created");
+            
+            // Sign out admin
+            await signOut(auth);
+        } catch (adminError) {
+            if (adminError.code === 'auth/email-already-in-use') {
+                console.log("Admin already exists");
+            } else {
+                console.error("Admin creation error:", adminError);
+            }
+        }
+        
+        // Create teacher user
+        console.log("Creating teacher user...");
+        try {
+            const teacherCred = await createUserWithEmailAndPassword(
+                auth, 
+                "teacher@karate.com", 
+                "Teacher123!"
+            );
+            console.log("Teacher created:", teacherCred.user.uid);
+            
+            // Create teacher role
+            await setDoc(doc(db, "roles", teacherCred.user.uid), {
+                role: "teacher",
+                email: "teacher@karate.com",
+                createdAt: new Date().toISOString()
+            });
+            console.log("Teacher role created");
+            
+            // Sign out teacher
+            await signOut(auth);
+        } catch (teacherError) {
+            if (teacherError.code === 'auth/email-already-in-use') {
+                console.log("Teacher already exists");
+            } else {
+                console.error("Teacher creation error:", teacherError);
+            }
+        }
+        
+        console.log("SIMPLE setup complete!");
+        return { success: true, message: "Setup complete" };
+        
+    } catch (error) {
+        console.error("Setup error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+// 2. Test login function
+export async function testLogin() {
+    console.log("Testing login...");
+    try {
+        // Test admin login
+        const adminCred = await signInWithEmailAndPassword(
+            auth, 
+            "admin@karate.com", 
+            "Admin123!"
+        );
+        console.log("Admin login successful:", adminCred.user.uid);
+        
+        // Get admin role
+        const adminRoleDoc = await getDoc(doc(db, "roles", adminCred.user.uid));
+        console.log("Admin role exists:", adminRoleDoc.exists());
+        if (adminRoleDoc.exists()) {
+            console.log("Admin role:", adminRoleDoc.data().role);
+        }
+        
+        await signOut(auth);
+        
+        // Test teacher login
+        const teacherCred = await signInWithEmailAndPassword(
+            auth, 
+            "teacher@karate.com", 
+            "Teacher123!"
+        );
+        console.log("Teacher login successful:", teacherCred.user.uid);
+        
+        // Get teacher role
+        const teacherRoleDoc = await getDoc(doc(db, "roles", teacherCred.user.uid));
+        console.log("Teacher role exists:", teacherRoleDoc.exists());
+        if (teacherRoleDoc.exists()) {
+            console.log("Teacher role:", teacherRoleDoc.data().role);
+        }
+        
+        await signOut(auth);
+        
+        return { success: true, message: "Test login successful" };
+        
+    } catch (error) {
+        console.error("Test login failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+// 3. Original functions (keep these)
 export async function loginUser(email, password) {
   return await signInWithEmailAndPassword(auth, email, password);
 }
@@ -65,7 +180,6 @@ export function autoRedirect() {
   });
 }
 
-// ----------------- STUDENT MANAGEMENT -----------------
 export async function addStudent(name, belt, id) {
   await setDoc(doc(db, "students", id), { name, belt, id });
 }
@@ -83,12 +197,11 @@ export async function getAllStudents() {
   return students;
 }
 
-// ----------------- ATTENDANCE -----------------
 export async function markAttendance(studentId) {
   const studentRef = doc(db, "students", studentId);
   const studentSnap = await getDoc(studentRef);
 
-  if(!studentSnap.exists()) return; // student not found
+  if(!studentSnap.exists()) return;
 
   const studentData = studentSnap.data();
   const today = new Date().toISOString().split("T")[0];
@@ -102,61 +215,8 @@ export async function markAttendance(studentId) {
   });
 }
 
-// ================= ADD THIS FUNCTION =================
-// Simple function to ensure roles exist
-export async function ensureDefaultUsersExist() {
-    console.log("Ensuring default users exist...");
-    
-    const users = [
-        { email: "admin@karate.com", password: "Admin123!", role: "admin" },
-        { email: "teacher@karate.com", password: "Teacher123!", role: "teacher" }
-    ];
-    
-    for (const user of users) {
-        try {
-            // Try to sign in (user exists)
-            const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
-            console.log(`User ${user.email} exists, checking role...`);
-            
-            // Check if role exists
-            const roleDoc = await getDoc(doc(db, "roles", userCredential.user.uid));
-            if (!roleDoc.exists()) {
-                console.log(`No role for ${user.email}, creating...`);
-                await setDoc(doc(db, "roles", userCredential.user.uid), {
-                    role: user.role,
-                    email: user.email
-                });
-                console.log(`Role created for ${user.email}`);
-            }
-            
-            await signOut(auth);
-            
-        } catch (authError) {
-            // User doesn't exist, create them
-            if (authError.code === 'auth/user-not-found') {
-                console.log(`Creating user ${user.email}...`);
-                
-                // Create auth user
-                const newUserCredential = await createUserWithEmailAndPassword(
-                    auth, user.email, user.password
-                );
-                
-                // Create role
-                await setDoc(doc(db, "roles", newUserCredential.user.uid), {
-                    role: user.role,
-                    email: user.email
-                });
-                
-                console.log(`Created ${user.role}: ${user.email}`);
-                await signOut(auth);
-            } else {
-                console.error(`Error with ${user.email}:`, authError);
-            }
-        }
-    }
-    
-    console.log("Default users ensured!");
-}
-
-// Call this function automatically
-ensureDefaultUsersExist();
+// 4. Call simple setup on load
+console.log("Firebase app initialized");
+setupUsersSimple().then(result => {
+    console.log("Auto-setup result:", result);
+});
