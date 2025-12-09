@@ -377,12 +377,12 @@
     <div id="adminView" class="view">
         <div class="container">
             <h2>Admin Panel</h2>
-            <button class="logout-btn" onclick="logout()">Logout</button>
             
             <!-- Tabs for Admin Panel -->
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('studentsTab')">Students</button>
                 <button class="tab" onclick="switchTab('attendanceTab')">Today's Attendance</button>
+                <button class="tab" onclick="switchTab('calendarTab')">Attendance by Date</button>
             </div>
             
             <!-- Students Tab -->
@@ -417,6 +417,40 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Calendar Attendance Tab -->
+<div id="calendarTab" class="tab-content">
+    <h3>Attendance by Date</h3>
+
+    <input type="date" id="attendanceDate" onchange="loadDateAttendance()" style="
+        padding:10px; 
+        font-size:16px;
+        margin-bottom:15px;
+        width: 250px;
+        display:block;
+        margin-left:auto;
+        margin-right:auto;
+    ">
+
+    <div id="calendarAttendanceMsg" class="info-msg" style="text-align:center;">
+        Select a date to view attendance.
+    </div>
+
+    <table id="calendarAttendanceTable" style="display:none;">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Belt</th>
+                <th>Status</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
 
@@ -424,7 +458,7 @@
     <div id="teacherView" class="view">
         <div class="container">
             <h2>Teacher Panel</h2>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            
             
             <div class="scanner-container">
                 <h3>Scan Student Barcode</h3>
@@ -447,6 +481,7 @@
                     <!-- Teacher attendance rows will be added here -->
                 </tbody>
             </table>
+            <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
 
@@ -477,31 +512,23 @@
         let currentAdminTab = 'studentsTab';
 
         // Tab switching function
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all tab buttons
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to clicked tab button
-            event.target.classList.add('active');
-            
-            // Store current tab
-            currentAdminTab = tabName;
-            
-            // If switching to attendance tab, load attendance data
-            if (tabName === 'attendanceTab') {
-                loadAdminAttendance();
-            }
-        }
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    document.getElementById(tabName).classList.add('active');
+    event.target.classList.add('active');
+
+    if (tabName === 'attendanceTab') {
+        loadAdminAttendance();
+    }
+}
+
 
         // Setup users function
         async function setupUsers() {
@@ -623,6 +650,61 @@
             await loadAttendance();
             startQRScanner();
         }
+
+        async function loadDateAttendance() {
+    const selectedDate = document.getElementById("attendanceDate").value;
+
+    if (!selectedDate) return;
+
+    const table = document.getElementById("calendarAttendanceTable");
+    const tbody = table.getElementsByTagName("tbody")[0];
+    const msg = document.getElementById("calendarAttendanceMsg");
+
+    tbody.innerHTML = "";
+    msg.innerText = "Loading attendance...";
+    table.style.display = "none";
+
+    try {
+        const module = await import("./assets/app.js");
+
+        const students = await module.getAllStudents();
+        const attendanceSnapshot = await module.getTodaysAttendance(selectedDate);
+
+        const attendanceMap = {};
+        attendanceSnapshot.forEach(doc => {
+            const data = doc.data();
+            attendanceMap[data.studentId] = {
+                time: data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString() : "N/A"
+            };
+        });
+
+        students.forEach(student => {
+            const row = document.createElement("tr");
+            const attendance = attendanceMap[student.id];
+
+            row.innerHTML = `
+                <td>${student.id}</td>
+                <td>${student.name}</td>
+                <td>${student.belt}</td>
+                <td class="${attendance ? "present" : "absent"}">
+                    ${attendance ? "✅ Present" : "❌ Absent"}
+                </td>
+                <td>${attendance ? attendance.time : "-"}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        msg.innerText = `Attendance for ${selectedDate}`;
+        msg.className = "info-msg";
+        table.style.display = "table";
+
+    } catch (error) {
+        console.error(error);
+        msg.innerText = "Error loading attendance: " + error.message;
+        msg.className = "error-msg";
+    }
+}
+
 
         // Generate barcode for student
         function generateBarcode(studentId, studentName) {
