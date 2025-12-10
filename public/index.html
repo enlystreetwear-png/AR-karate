@@ -21,13 +21,7 @@
         }
 
         /* Center ALL app pages (login, admin, teacher, student, etc.) */
-.app-view {
-    display: flex;
-    justify-content: center;     /* Center horizontally */
-    align-items: center;         /* Center vertically */
-    height: 100vh;               /* Full screen */
-    width: 100%;
-}
+
 
         .container {
             width: 100%;
@@ -327,11 +321,7 @@
 
         /* ---------------- RESPONSIVE ---------------- */
         @media (max-width: 768px) {
-            .container {
-                width: 95%;
-                margin: 10px auto;
-                padding: 15px;
-            }
+
             
             button {
                 font-size: 14px;
@@ -364,22 +354,13 @@
             }
         }
 
-        #loginView {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
 
-        #loginView .container {
-    max-width: 400px;
-}
 
     </style>
 </head>
 <body>
     <!-- LOGIN VIEW -->
-   <div id="loginView" class="app-view">
+   <div id="loginView" class="view">
 
         <div class="container">
             <h2>Karate Attendance System</h2>
@@ -396,7 +377,7 @@
     </div>
 
     <!-- ADMIN VIEW -->
-    <div id="adminView" class="app-view">
+    <div id="adminView" class="view">
 
 
         <div class="container">
@@ -479,7 +460,7 @@
     </div>
 
     <!-- TEACHER VIEW -->
-    <div id="teacherView" class="app-view">
+    <div id="teacherView" class="view">
 
         <div class="container">
             <h2>Teacher Panel</h2>
