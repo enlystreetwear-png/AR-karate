@@ -20,10 +20,19 @@
             color: #333;
         }
 
+        /* Center ALL app pages (login, admin, teacher, student, etc.) */
+.app-view {
+    display: flex;
+    justify-content: center;     /* Center horizontally */
+    align-items: center;         /* Center vertically */
+    height: 100vh;               /* Full screen */
+    width: 100%;
+}
+
         .container {
-            width: 90%;
-            max-width: 1000px;
-            margin: 20px auto;
+            width: 100%;
+            max-width: 400px; 
+            margin: 0 auto;
             background-color: #fff;
             border-radius: 12px;
             padding: 20px;
@@ -370,7 +379,8 @@
 </head>
 <body>
     <!-- LOGIN VIEW -->
-    <div id="loginView" class="view">
+   <div id="loginView" class="app-view">
+
         <div class="container">
             <h2>Karate Attendance System</h2>
             <input type="email" id="email" placeholder="Email" value="admin@karate.com">
@@ -386,7 +396,9 @@
     </div>
 
     <!-- ADMIN VIEW -->
-    <div id="adminView" class="view">
+    <div id="adminView" class="app-view">
+
+
         <div class="container">
             <h2>Admin Panel</h2>
             
@@ -467,7 +479,8 @@
     </div>
 
     <!-- TEACHER VIEW -->
-    <div id="teacherView" class="view">
+    <div id="teacherView" class="app-view">
+
         <div class="container">
             <h2>Teacher Panel</h2>
             
