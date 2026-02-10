@@ -7,10 +7,17 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
+
+        *,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
         /* ---------------- BASE STYLES ---------------- */
         body {
             font-family: Arial, sans-serif;
-            background-color: #f8f8f8;
+            background-color: #ffffff;
             margin: 0;
             padding: 0;
         }
@@ -28,9 +35,9 @@
             max-width: 400px; 
             margin: 0 auto;
             background-color: #fff;
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+
         }
 
         /* ---------------- VIEWS ---------------- */
@@ -237,16 +244,16 @@
 
         /* ---------------- TABLES ---------------- */
         table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
 
         th, td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
+        padding: 8px;
+        font-size: 13px;
+    }
 
         th {
             background-color: #1a73e8;
@@ -322,6 +329,12 @@
         /* ---------------- RESPONSIVE ---------------- */
         @media (max-width: 768px) {
 
+             .container {
+                width: 90%;
+                margin: 10px auto;
+                padding: 15px;
+            }
+
             
             button {
                 font-size: 14px;
@@ -352,9 +365,100 @@
                 text-align: left;
                 border-bottom: 1px solid #ddd;
             }
+           
         }
 
+.center-btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
 
+       /* MOBILE FIX: Make Today's Attendance scroll properly */
+.attendance-wrapper {
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+
+#adminAttendanceTable th,
+#attendanceTable th,
+#calendarAttendanceTable th {
+    font-size: 14px;
+}
+
+#adminAttendanceTable td,
+#attendanceTable td,
+#calendarAttendanceTable td {
+    font-size: 14px;
+    padding: 8px;
+}
+
+        @media (max-width: 768px) {
+
+    /* Hide table headers */
+    table thead {
+        display: none;
+    }
+
+    /* Turn rows into cards */
+    table,
+    table tbody,
+    table tr {
+        display: block;
+        width: 100%;
+    }
+
+    table tr {
+        background: #ffffff;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        padding: 12px;
+    }
+
+    /* Each cell becomes a row */
+    table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        font-size: 14px;
+        white-space: normal;
+    }
+
+    /* Labels */
+    table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #555;
+        margin-right: 10px;
+    }
+
+    /* Action buttons stack nicely */
+    .actions-cell {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .actions-cell button {
+        width: 100%;
+    }
+}
+
+        .search-box {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+ 
 
     </style>
 </head>
@@ -363,14 +467,21 @@
    <div id="loginView" class="view">
 
         <div class="container">
-            <h2>Karate Attendance System</h2>
+            
+            <div style="text-align:center; margin-bottom: 20px;">
+    <img src="https://raw.githubusercontent.com/enlystreetwear-png/AR-karate/refs/heads/main/Untitled-2%20copy_page-0001%20(1).jpg" 
+         alt="App Logo" 
+         style="width: 120px; height: auto;">
+</div>
+
             <input type="email" id="email" placeholder="Email" value="admin@karate.com">
             <input type="password" id="password" placeholder="Password" value="Admin123!">
-            <button onclick="login()">Login</button>
             
-            <button onclick="setupUsers()" class="setup-btn">
-                Setup Default Users (First Time Only)
-            </button>
+            <div class="center-btn">
+    <button onclick="login()">Login</button>
+</div>
+            
+
             
             <div id="loginMsg"></div>
         </div>
@@ -406,7 +517,15 @@
             <div id="attendanceTab" class="tab-content">
                 <h3>Today's Attendance</h3>
                 <div id="adminAttendanceMsg" class="info-msg">Loading attendance data...</div>
-                <table id="adminAttendanceTable">
+                <div class="attendance-wrapper">
+                    <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('adminAttendanceTable', this.value)"
+>
+    <table id="adminAttendanceTable">
+
                     <thead>
                         <tr>
                             <th>Student ID</th>
@@ -420,7 +539,9 @@
                     <tbody>
                         <!-- Admin attendance rows will be added here -->
                     </tbody>
-                </table>
+                    </table>
+</div>
+
             </div>
 
             <!-- Calendar Attendance Tab -->
@@ -441,7 +562,15 @@
         Select a date to view attendance.
     </div>
 
-    <table id="calendarAttendanceTable" style="display:none;">
+    <div class="attendance-wrapper">
+        <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('calendarAttendanceTable', this.value)"
+>
+    <table id="calendarAttendanceTable">
+
         <thead>
             <tr>
                 <th>Student ID</th>
@@ -452,7 +581,9 @@
             </tr>
         </thead>
         <tbody></tbody>
-    </table>
+        </table>
+</div>
+
 </div>
 
              <button class="logout-btn" onclick="logout()">Logout</button>
@@ -473,7 +604,15 @@
             </div>
             
             <h3>Today's Attendance</h3>
-            <table id="attendanceTable">
+            <div class="attendance-wrapper">
+                <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('attendanceTable', this.value)"
+>
+    <table id="attendanceTable">
+
                 <thead>
                     <tr>
                         <th>Student ID</th>
@@ -486,7 +625,9 @@
                 <tbody>
                     <!-- Teacher attendance rows will be added here -->
                 </tbody>
-            </table>
+                </table>
+</div>
+
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
@@ -685,20 +826,32 @@ function switchTab(tabName) {
         });
 
         students.forEach(student => {
-            const row = document.createElement("tr");
-            const attendance = attendanceMap[student.id];
+    const row = document.createElement("tr");
+    const attendance = attendanceMap[student.id];
 
-            row.innerHTML = `
-                <td>${student.id}</td>
-                <td>${student.name}</td>
-                <td>${student.belt}</td>
-                <td class="${attendance ? "present" : "absent"}">
-                    ${attendance ? "✅ Present" : "❌ Absent"}
-                </td>
-                <td>${attendance ? attendance.time : "-"}</td>
-            `;
-            tbody.appendChild(row);
-        });
+    if (attendance) {
+        // Present
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="present status-cell">✅ Present</td>
+            <td data-label="Time">${attendance.time}</td>
+        `;
+    } else {
+        // Absent
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="absent status-cell">❌ Absent</td>
+            <td data-label="Time">-</td>
+        `;
+    }
+
+    tbody.appendChild(row);
+});
+
 
         msg.innerText = `Attendance for ${selectedDate}`;
         msg.className = "info-msg";
@@ -1157,6 +1310,24 @@ function switchTab(tabName) {
                 console.error("Error initializing:", error);
             }
         });
+
+        function filterTableByName(tableId, searchValue) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const filter = searchValue.toLowerCase();
+    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+    for (let row of rows) {
+        // Name is always column index 1
+        const nameCell = row.children[1];
+        if (!nameCell) continue;
+
+        const nameText = nameCell.textContent.toLowerCase();
+        row.style.display = nameText.includes(filter) ? "" : "none";
+    }
+}
+
 
         // Make functions globally available
         window.login = login;
