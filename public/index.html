@@ -1001,7 +1001,6 @@ function switchTab(tabName) {
     const attendance = attendanceMap[student.id];
 
     if (attendance) {
-        // Present
         row.innerHTML = `
             <td data-label="Student ID">${student.id}</td>
             <td data-label="Name">${student.name}</td>
@@ -1010,7 +1009,6 @@ function switchTab(tabName) {
             <td data-label="Time">${attendance.time}</td>
         `;
     } else {
-        // Absent
         row.innerHTML = `
             <td data-label="Student ID">${student.id}</td>
             <td data-label="Name">${student.name}</td>
@@ -1020,8 +1018,9 @@ function switchTab(tabName) {
         `;
     }
 
-    tbody.appendChild(row);
+    adminAttendanceTable.appendChild(row);
 });
+
 
                 
                 // Update message
@@ -1186,7 +1185,6 @@ function switchTab(tabName) {
     const attendance = attendanceMap[student.id];
 
     if (attendance) {
-        // Present
         row.innerHTML = `
             <td data-label="Student ID">${student.id}</td>
             <td data-label="Name">${student.name}</td>
@@ -1195,7 +1193,6 @@ function switchTab(tabName) {
             <td data-label="Time">${attendance.time}</td>
         `;
     } else {
-        // Absent
         row.innerHTML = `
             <td data-label="Student ID">${student.id}</td>
             <td data-label="Name">${student.name}</td>
@@ -1205,8 +1202,9 @@ function switchTab(tabName) {
         `;
     }
 
-    tbody.appendChild(row);
+    attendanceTable.appendChild(row);
 });
+
 
                 
             } catch (error) {
