@@ -984,44 +984,30 @@ function switchTab(tabName) {
                 
                 // Add rows for each student
                 students.forEach(student => {
-                    const row = document.createElement("tr");
-                    const attendance = attendanceMap[student.id];
-                    
-                    if (attendance) {
-                        // Student is present - show with edit buttons
-                        row.innerHTML = `
-                            <td>${student.id}</td>
-                            <td>${student.name}</td>
-                            <td>${student.belt}</td>
-                            <td class="present status-cell">✅ Present</td>
-                            <td>${attendance.time}</td>
-                            <td class="actions-cell">
-                                <button class="absent-btn" onclick="markAdminAttendance('${student.id}', 'absent')">
-                                    Mark Absent
-                                </button>
-                                <button class="edit-btn" onclick="deleteAttendanceRecord('${attendance.id}', '${student.id}')">
-                                    Remove Attendance
-                                </button>
-                            </td>
-                        `;
-                    } else {
-                        // Student is absent - show with mark present button
-                        row.innerHTML = `
-                            <td>${student.id}</td>
-                            <td>${student.name}</td>
-                            <td>${student.belt}</td>
-                            <td class="absent status-cell">❌ Absent</td>
-                            <td>-</td>
-                            <td class="actions-cell">
-                                <button class="present-btn" onclick="markAdminAttendance('${student.id}', 'present')">
-                                    Mark Present
-                                </button>
-                            </td>
-                        `;
-                    }
-                    
-                    adminAttendanceTable.appendChild(row);
-                });
+    const row = document.createElement("tr");
+    const attendance = attendanceMap[student.id];
+
+    if (attendance) {
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="present status-cell">✅ Present</td>
+            <td data-label="Time">${attendance.time}</td>
+        `;
+    } else {
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="absent status-cell">❌ Absent</td>
+            <td data-label="Time">-</td>
+        `;
+    }
+
+    adminAttendanceTable.appendChild(row);
+});
+
                 
                 // Update message
                 const presentCount = Object.keys(attendanceMap).length;
