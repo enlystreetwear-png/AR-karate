@@ -799,20 +799,32 @@ function switchTab(tabName) {
         });
 
         students.forEach(student => {
-            const row = document.createElement("tr");
-            const attendance = attendanceMap[student.id];
+    const row = document.createElement("tr");
+    const attendance = attendanceMap[student.id];
 
-            row.innerHTML = `
-                <td data-label="Student ID">${student.id}</td>
-<td data-label="Name">${student.name}</td>
-<td data-label="Belt">${student.belt}</td>
-<td data-label="Status" class="present status-cell">✅ Present</td>
-<td data-label="Time">${attendance.time}</td>
-<td data-label="Actions" class="actions-cell">...</td>
+    if (attendance) {
+        // Present
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="present status-cell">✅ Present</td>
+            <td data-label="Time">${attendance.time}</td>
+        `;
+    } else {
+        // Absent
+        row.innerHTML = `
+            <td data-label="Student ID">${student.id}</td>
+            <td data-label="Name">${student.name}</td>
+            <td data-label="Belt">${student.belt}</td>
+            <td data-label="Status" class="absent status-cell">❌ Absent</td>
+            <td data-label="Time">-</td>
+        `;
+    }
 
-            `;
-            tbody.appendChild(row);
-        });
+    tbody.appendChild(row);
+});
+
 
         msg.innerText = `Attendance for ${selectedDate}`;
         msg.className = "info-msg";
