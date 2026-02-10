@@ -7,6 +7,13 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
+
+        *,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
         /* ---------------- BASE STYLES ---------------- */
         body {
             font-family: Arial, sans-serif;
@@ -237,16 +244,17 @@
 
         /* ---------------- TABLES ---------------- */
         table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
 
         th, td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
+        padding: 8px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
 
         th {
             background-color: #1a73e8;
@@ -358,6 +366,9 @@
                 text-align: left;
                 border-bottom: 1px solid #ddd;
             }
+            .attendance-wrapper table {
+        min-width: 650px; /* forces horizontal scroll instead of overflow */
+    }
         }
 
 .center-btn {
@@ -370,7 +381,9 @@
 .attendance-wrapper {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
+
 
 #adminAttendanceTable,
 #attendanceTable,
