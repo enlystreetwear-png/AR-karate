@@ -286,17 +286,27 @@
 
         /* ---------------- QR SCANNER ---------------- */
         #reader {
-            margin: 20px auto;
-            border: 2px dashed #1a73e8;
-            border-radius: 8px;
-            padding: 10px;
-            width: 300px;
-            height: 300px;
-        }
+    width: 100%;
+    aspect-ratio: 1 / 1; /* perfect square */
+    border: 2px dashed #1a73e8;
+    border-radius: 12px;
+    overflow: hidden; /* 🔑 keeps camera inside border */
+    background: #000;
+}
 
-        .scanner-container {
-            text-align: center;
-        }
+/* Force camera video to stay inside */
+#reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+       .scanner-container {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto 20px;
+}
 
         /* ---------------- MESSAGES ---------------- */
         #loginMsg, #scanMsg, #adminAttendanceMsg {
@@ -351,10 +361,7 @@
                 justify-content: space-between;
             }
             
-            #reader {
-                width: 250px;
-                height: 250px;
-            }
+            
             
             .tabs {
                 flex-direction: column;
@@ -591,28 +598,34 @@
     </div>
 
     <!-- TEACHER VIEW -->
-    <div id="teacherView" class="view">
+<div id="teacherView" class="view">
+    <div class="container">
+        <h2>Teacher Panel</h2>
 
-        <div class="container">
-            <h2>Teacher Panel</h2>
-            
-            
-            <div class="scanner-container">
-                <h3>Scan Student Barcode</h3>
-                <div id="reader"></div>
-                <div id="scanMsg" class="info-msg">Point camera at student barcode</div>
+        <div class="scanner-container">
+            <h3>Scan Student Barcode</h3>
+
+            <p style="font-size:13px;color:#666;margin-bottom:8px;">
+                Align the barcode inside the square
+            </p>
+
+            <div id="reader"></div>
+            <div id="scanMsg" class="info-msg">
+                Point camera at student barcode
             </div>
-            
-            <h3>Today's Attendance</h3>
-            <div class="attendance-wrapper">
-                <input
-    type="text"
-    class="search-box"
-    placeholder="Search student by name..."
-    oninput="filterTableByName('attendanceTable', this.value)"
->
-    <table id="attendanceTable">
+        </div>
 
+        <h3>Today's Attendance</h3>
+
+        <div class="attendance-wrapper">
+            <input
+                type="text"
+                class="search-box"
+                placeholder="Search student by name..."
+                oninput="filterTableByName('attendanceTable', this.value)"
+            >
+
+            <table id="attendanceTable">
                 <thead>
                     <tr>
                         <th>Student ID</th>
@@ -625,12 +638,13 @@
                 <tbody>
                     <!-- Teacher attendance rows will be added here -->
                 </tbody>
-                </table>
+            </table>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 </div>
 
-            <button class="logout-btn" onclick="logout()">Logout</button>
-        </div>
-    </div>
 
     <script>
         // Initialize views
@@ -1259,7 +1273,12 @@ function switchTab(tabName) {
             }
 
             html5QrcodeScanner = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: 250 };
+            const config = {
+    fps: 10,
+    qrbox: { width: 220, height: 220 }, // fits inside container
+    aspectRatio: 1.0
+};
+
 
             html5QrcodeScanner.start(
                 { facingMode: "environment" },
