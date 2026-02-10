@@ -253,7 +253,6 @@
         th, td {
         padding: 8px;
         font-size: 13px;
-        white-space: nowrap;
     }
 
         th {
@@ -366,9 +365,7 @@
                 text-align: left;
                 border-bottom: 1px solid #ddd;
             }
-            .attendance-wrapper table {
-        min-width: 650px; /* forces horizontal scroll instead of overflow */
-    }
+           
         }
 
 .center-btn {
@@ -380,16 +377,10 @@
        /* MOBILE FIX: Make Today's Attendance scroll properly */
 .attendance-wrapper {
     width: 100%;
-    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
 
 
-#adminAttendanceTable,
-#attendanceTable,
-#calendarAttendanceTable {
-    min-width: 650px; /* Makes table readable on mobile */
-}
 
 #adminAttendanceTable th,
 #attendanceTable th,
@@ -403,6 +394,61 @@
     font-size: 14px;
     padding: 8px;
 }
+
+        @media (max-width: 768px) {
+
+    /* Hide table headers */
+    table thead {
+        display: none;
+    }
+
+    /* Turn rows into cards */
+    table,
+    table tbody,
+    table tr {
+        display: block;
+        width: 100%;
+    }
+
+    table tr {
+        background: #ffffff;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        padding: 12px;
+    }
+
+    /* Each cell becomes a row */
+    table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        font-size: 14px;
+        white-space: normal;
+    }
+
+    /* Labels */
+    table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #555;
+        margin-right: 10px;
+    }
+
+    /* Action buttons stack nicely */
+    .actions-cell {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .actions-cell button {
+        width: 100%;
+    }
+}
+
  
 
     </style>
@@ -757,13 +803,13 @@ function switchTab(tabName) {
             const attendance = attendanceMap[student.id];
 
             row.innerHTML = `
-                <td>${student.id}</td>
-                <td>${student.name}</td>
-                <td>${student.belt}</td>
-                <td class="${attendance ? "present" : "absent"}">
-                    ${attendance ? "✅ Present" : "❌ Absent"}
-                </td>
-                <td>${attendance ? attendance.time : "-"}</td>
+                <td data-label="Student ID">${student.id}</td>
+<td data-label="Name">${student.name}</td>
+<td data-label="Belt">${student.belt}</td>
+<td data-label="Status" class="present status-cell">✅ Present</td>
+<td data-label="Time">${attendance.time}</td>
+<td data-label="Actions" class="actions-cell">...</td>
+
             `;
             tbody.appendChild(row);
         });
