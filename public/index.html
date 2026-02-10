@@ -449,6 +449,15 @@
     }
 }
 
+        .search-box {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
  
 
     </style>
@@ -509,6 +518,12 @@
                 <h3>Today's Attendance</h3>
                 <div id="adminAttendanceMsg" class="info-msg">Loading attendance data...</div>
                 <div class="attendance-wrapper">
+                    <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('adminAttendanceTable', this.value)"
+>
     <table id="adminAttendanceTable">
 
                     <thead>
@@ -548,6 +563,12 @@
     </div>
 
     <div class="attendance-wrapper">
+        <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('calendarAttendanceTable', this.value)"
+>
     <table id="calendarAttendanceTable">
 
         <thead>
@@ -584,6 +605,12 @@
             
             <h3>Today's Attendance</h3>
             <div class="attendance-wrapper">
+                <input
+    type="text"
+    class="search-box"
+    placeholder="Search student by name..."
+    oninput="filterTableByName('attendanceTable', this.value)"
+>
     <table id="attendanceTable">
 
                 <thead>
@@ -1283,6 +1310,24 @@ function switchTab(tabName) {
                 console.error("Error initializing:", error);
             }
         });
+
+        function filterTableByName(tableId, searchValue) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const filter = searchValue.toLowerCase();
+    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+    for (let row of rows) {
+        // Name is always column index 1
+        const nameCell = row.children[1];
+        if (!nameCell) continue;
+
+        const nameText = nameCell.textContent.toLowerCase();
+        row.style.display = nameText.includes(filter) ? "" : "none";
+    }
+}
+
 
         // Make functions globally available
         window.login = login;
