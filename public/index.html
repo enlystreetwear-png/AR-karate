@@ -483,6 +483,18 @@
 
             <input type="email" id="email" placeholder="Email" value="admin@karate.com">
             <input type="password" id="password" placeholder="Password" value="Admin123!">
+
+            <hr style="margin:20px 0;">
+
+<h3>Student Login</h3>
+<input type="text" id="studentLoginId" placeholder="Student ID (Barcode)">
+<input type="password" id="studentLoginPassword" placeholder="Password">
+
+<div class="center-btn">
+  <button onclick="studentLogin()">Login as Student</button>
+</div>
+<div id="studentLoginMsg"></div>
+
             
             <div class="center-btn">
     <button onclick="login()">Login</button>
@@ -494,6 +506,7 @@
         </div>
     </div>
 
+    
     <!-- ADMIN VIEW -->
     <div id="adminView" class="view">
 
@@ -524,6 +537,8 @@
 
 <input type="text" id="studentBelt" placeholder="Belt Color">
 <input type="text" id="studentId" placeholder="Student ID (for barcode)">
+<input type="password" id="studentPassword" placeholder="Student Password">
+
 
 <input type="file" id="studentPhoto" accept="image/*" onchange="previewStudentPhoto(event)">
 
@@ -659,10 +674,38 @@
     </div>
 </div>
 
+<!-- STUDENT VIEW -->
+<div id="studentView" class="view">
+  <div class="container">
+    <h2>Student Profile</h2>
 
+    <div id="studentProfileBox" style="text-align:center;"></div>
+
+    <div id="studentAttendanceBox" style="margin-top:15px;"></div>
+
+    <h3 style="margin-top:20px;">Recent Attendance</h3>
+    <div class="attendance-wrapper">
+      <table id="studentAttendanceTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <button class="logout-btn" onclick="studentLogout()">Logout</button>
+  </div>
+</div>
+
+    
     <script>
         // Initialize views
         document.addEventListener('DOMContentLoaded', function() {
+            
             document.getElementById('loginView').style.display = 'block';
             
             if (window.location.hash === '#adminView') {
@@ -773,6 +816,118 @@ function switchTab(tabName) {
                 console.error(error);
             }
         }
+
+        const studentView = document.getElementById("studentView");
+const studentLoginMsg = document.getElementById("studentLoginMsg");
+
+async function studentLogin() {
+  const id = document.getElementById("studentLoginId").value.trim();
+  const pass = document.getElementById("studentLoginPassword").value;
+
+  studentLoginMsg.innerText = "";
+  studentLoginMsg.className = "";
+
+  if (!id || !pass) {
+    studentLoginMsg.innerText = "Enter Student ID and Password";
+    studentLoginMsg.className = "error-msg";
+    return;
+  }
+
+  try {
+    const module = await import("./assets/app.js?v=2");
+    const ok = await module.verifyStudentLogin(id, pass);
+
+    if (!ok) {
+      studentLoginMsg.innerText = "Invalid Student ID or Password";
+      studentLoginMsg.className = "error-msg";
+      return;
+    }
+
+    localStorage.setItem("studentId", id);
+    showStudentView(id);
+
+  } catch (e) {
+    console.error(e);
+    studentLoginMsg.innerText = "Student login failed: " + e.message;
+    studentLoginMsg.className = "error-msg";
+  }
+}
+
+async function showStudentView(studentId) {
+  loginView.style.display = "none";
+  adminView.style.display = "none";
+  teacherView.style.display = "none";
+  studentView.style.display = "block";
+  window.location.hash = "#studentView";
+
+  await loadStudentProfile(studentId);
+}
+
+async function loadStudentProfile(studentId) {
+  const module = await import("./assets/app.js?v=2");
+  const student = await module.getStudentById(studentId);
+
+  if (!student) {
+    alert("Student not found");
+    studentLogout();
+    return;
+  }
+
+  // Profile box
+  const photo = student.photoBase64 || "";
+  document.getElementById("studentProfileBox").innerHTML = `
+    ${photo ? `<img src="${photo}" style="width:120px;height:120px;border-radius:16px;object-fit:cover;box-shadow:0 2px 6px rgba(0,0,0,0.15);">` : ""}
+    <h3 style="margin:10px 0 0 0;">${student.name || ""}</h3>
+    <p style="margin:6px 0;color:#555;">
+      ID: <b>${student.id || ""}</b><br>
+      Belt: <b>${student.belt || ""}</b><br>
+      Father: <b>${student.fatherName || "-"}</b><br>
+      DOB: <b>${student.dob || "-"}</b><br>
+      Age: <b>${student.age || "-"}</b><br>
+      Weight: <b>${student.weight || "-"}</b>
+    </p>
+  `;
+
+  // Attendance stats
+  const stats = await module.getStudentAttendanceStats(studentId, student.createdDate || "");
+  const pct = stats.totalClasses > 0 ? Math.round((stats.presentCount / stats.totalClasses) * 100) : 0;
+
+  document.getElementById("studentAttendanceBox").innerHTML = `
+    <div style="background:#f3f3f3;border-radius:10px;overflow:hidden;height:14px;">
+      <div style="width:${pct}%;height:14px;background:#1a73e8;"></div>
+    </div>
+    <p style="text-align:center;margin:8px 0;color:#333;">
+      Attendance: <b>${pct}%</b> (${stats.presentCount}/${stats.totalClasses})
+    </p>
+  `;
+
+  // Recent attendance table
+  const tbody = document.querySelector("#studentAttendanceTable tbody");
+  tbody.innerHTML = "";
+
+  stats.recent.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td data-label="Date">${r.date}</td>
+      <td data-label="Status" class="present">✅ Present</td>
+      <td data-label="Time">${r.time || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (stats.recent.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" style="text-align:center;color:#666;">No attendance yet.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function studentLogout() {
+  localStorage.removeItem("studentId");
+  studentView.style.display = "none";
+  loginView.style.display = "block";
+  window.location.hash = "";
+}
 
         // Logout
         async function logout() {
@@ -1228,6 +1383,13 @@ async function addStudentUI(ev) {
   const belt = document.getElementById("studentBelt").value.trim();
   const id = document.getElementById("studentId").value.trim();
   const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
+    const studentPassword = document.getElementById("studentPassword").value.trim();
+    
+if (!studentPassword) {
+  alert("Please enter Student Password");
+  return;
+}
+
 
   if (!name || !fatherName || !dob || !belt || !id) {
     alert("Please fill all required fields (Name, Father Name, DOB, Belt, Student ID)");
@@ -1261,14 +1423,20 @@ async function addStudentUI(ev) {
     }
 
     const studentData = {
-      fatherName,
-      dob,
-      age,
-      weight,
-      aadharNumber,
-      photoBase64 // ✅ stored in Firestore
-    };
+  fatherName,
+  dob,
+  age,
+  weight,
+  aadharNumber,
+  photoBase64,
+  passwordHash,                // ✅ store hashed password
+  createdDate: new Date().toISOString().split("T")[0] // ✅ for attendance % range
+};
 
+
+const passwordHash = await sha256(studentPassword);
+
+      
     await module.addStudent(name, belt, id, studentData);
 
     alert("✅ Student Added Successfully!");
@@ -1295,6 +1463,8 @@ async function addStudentUI(ev) {
   } finally {
     if (btn) btn.disabled = false;
   }
+
+    document.getElementById("studentPassword").value = "";
 }
 
 
@@ -1463,9 +1633,22 @@ async function addStudentUI(ev) {
   return base64;
 }
 
+        async function sha256(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+
         
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
+
+            const savedStudentId = localStorage.getItem("studentId");
+if (window.location.hash === "#studentView" && savedStudentId) {
+  showStudentView(savedStudentId);
+}
+
             try {
                 const module = await import("./assets/app.js?v=2");
                 if (module.autoRedirect) {
