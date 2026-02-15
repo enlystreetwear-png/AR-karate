@@ -65,11 +65,34 @@ export function autoRedirect() {
   });
 }
 
+// ----------------- BASE64 PHOTO HELPERS (NO STORAGE) -----------------
+
+/**
+ * Convert File -> Base64 data URL (data:image/...;base64,...)
+ */
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve("");
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Your HTML calls: module.uploadStudentPhoto(photoFile, id)
+ * This returns base64 string.
+ */
+export async function uploadStudentPhoto(file, studentId) {
+  return await fileToBase64(file);
+}
+
 // ----------------- STUDENT MANAGEMENT -----------------
 export async function addStudent(name, belt, id, extra = {}) {
   if (!name || !belt || !id) throw new Error("Missing student fields");
 
-  // NOTE: photo is saved inside Firestore as photoBase64 (string)
   await setDoc(doc(db, "students", id), {
     name,
     belt,
@@ -101,7 +124,6 @@ export async function getAllStudents() {
 
 // ----------------- ATTENDANCE FUNCTIONS -----------------
 export async function markAttendance(studentId) {
-  // Check if student exists
   const studentRef = doc(db, "students", studentId);
   const studentSnap = await getDoc(studentRef);
   if (!studentSnap.exists()) throw new Error("Student not found");
@@ -110,7 +132,6 @@ export async function markAttendance(studentId) {
   const today = new Date().toISOString().split("T")[0];
   const attendanceId = `${studentId}-${today}`;
 
-  // Check if already marked today
   const existingSnap = await getDoc(doc(db, "attendance", attendanceId));
   if (existingSnap.exists()) throw new Error("Attendance already marked today");
 
