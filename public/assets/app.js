@@ -24,19 +24,12 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
-
 // ----------------- FIREBASE CONFIG -----------------
 const firebaseConfig = {
   apiKey: "AIzaSyA4OVgeKWvAIklI8hTibj3kT3C9KgBsp2w",
   authDomain: "ar-karate-e580f.firebaseapp.com",
   projectId: "ar-karate-e580f",
-  storageBucket: "ar-karate-e580f.firebasestorage.app", // keep if correct in your console
+  storageBucket: "ar-karate-e580f.firebasestorage.app",
   messagingSenderId: "1057516841712",
   appId: "1:1057516841712:web:53cdd653879cb678df3035",
   measurementId: "G-7K6PYQ1HWB"
@@ -45,7 +38,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 // ----------------- AUTH FUNCTIONS -----------------
 export async function loginUser(email, password) {
@@ -73,24 +65,11 @@ export function autoRedirect() {
   });
 }
 
-// ----------------- STORAGE: UPLOAD PHOTO -----------------
-export async function uploadStudentPhoto(file, studentId) {
-  if (!file) return "";
-
-  const safeName = (file.name || "photo").replace(/[^\w.-]/g, "_");
-  const fileRef = ref(storage, `studentPhotos/${studentId}/${Date.now()}-${safeName}`);
-
-  // upload
-  await uploadBytes(fileRef, file);
-
-  // get URL
-  return await getDownloadURL(fileRef);
-}
-
 // ----------------- STUDENT MANAGEMENT -----------------
 export async function addStudent(name, belt, id, extra = {}) {
   if (!name || !belt || !id) throw new Error("Missing student fields");
 
+  // NOTE: photo is saved inside Firestore as photoBase64 (string)
   await setDoc(doc(db, "students", id), {
     name,
     belt,
@@ -109,6 +88,7 @@ export async function updateStudent(id, updates = {}) {
 }
 
 export async function deleteStudent(id) {
+  if (!id) throw new Error("Missing student id");
   await deleteDoc(doc(db, "students", id));
 }
 
@@ -121,6 +101,7 @@ export async function getAllStudents() {
 
 // ----------------- ATTENDANCE FUNCTIONS -----------------
 export async function markAttendance(studentId) {
+  // Check if student exists
   const studentRef = doc(db, "students", studentId);
   const studentSnap = await getDoc(studentRef);
   if (!studentSnap.exists()) throw new Error("Student not found");
@@ -129,6 +110,7 @@ export async function markAttendance(studentId) {
   const today = new Date().toISOString().split("T")[0];
   const attendanceId = `${studentId}-${today}`;
 
+  // Check if already marked today
   const existingSnap = await getDoc(doc(db, "attendance", attendanceId));
   if (existingSnap.exists()) throw new Error("Attendance already marked today");
 
@@ -162,7 +144,11 @@ export async function setupUsersSimple() {
 
     // admin
     try {
-      const adminCred = await createUserWithEmailAndPassword(auth, "admin@karate.com", "Admin123!");
+      const adminCred = await createUserWithEmailAndPassword(
+        auth,
+        "admin@karate.com",
+        "Admin123!"
+      );
       await setDoc(doc(db, "roles", adminCred.user.uid), {
         role: "admin",
         email: "admin@karate.com",
@@ -175,7 +161,11 @@ export async function setupUsersSimple() {
 
     // teacher
     try {
-      const teacherCred = await createUserWithEmailAndPassword(auth, "teacher@karate.com", "Teacher123!");
+      const teacherCred = await createUserWithEmailAndPassword(
+        auth,
+        "teacher@karate.com",
+        "Teacher123!"
+      );
       await setDoc(doc(db, "roles", teacherCred.user.uid), {
         role: "teacher",
         email: "teacher@karate.com",
@@ -194,10 +184,10 @@ export async function setupUsersSimple() {
 
 export async function testLogin() {
   try {
-    const adminCred = await signInWithEmailAndPassword(auth, "admin@karate.com", "Admin123!");
+    await signInWithEmailAndPassword(auth, "admin@karate.com", "Admin123!");
     await signOut(auth);
 
-    const teacherCred = await signInWithEmailAndPassword(auth, "teacher@karate.com", "Teacher123!");
+    await signInWithEmailAndPassword(auth, "teacher@karate.com", "Teacher123!");
     await signOut(auth);
 
     return { success: true };
@@ -206,4 +196,4 @@ export async function testLogin() {
   }
 }
 
-console.log("Firebase app initialized");
+console.log("Firebase app initialized (no storage, base64 photos)");
