@@ -1383,16 +1383,15 @@ async function addStudentUI(ev) {
   const belt = document.getElementById("studentBelt").value.trim();
   const id = document.getElementById("studentId").value.trim();
   const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
-    const studentPassword = document.getElementById("studentPassword").value.trim();
-    
-if (!studentPassword) {
-  alert("Please enter Student Password");
-  return;
-}
-
+  const studentPassword = document.getElementById("studentPassword").value.trim();
 
   if (!name || !fatherName || !dob || !belt || !id) {
     alert("Please fill all required fields (Name, Father Name, DOB, Belt, Student ID)");
+    return;
+  }
+
+  if (!studentPassword) {
+    alert("Please enter Student Password");
     return;
   }
 
@@ -1410,33 +1409,29 @@ if (!studentPassword) {
   try {
     const module = await import("./assets/app.js?v=2");
 
-    // ✅ Convert photo to base64 (optional)
     let photoBase64 = "";
     if (photoFile) {
       photoBase64 = await fileToCompressedBase64(photoFile, 320, 0.7);
-
-      // Firestore doc size limit protection
       if (photoBase64.length > 700000) {
         alert("Photo is too large. Please choose a smaller image.");
         return;
       }
     }
 
+    // ✅ HASH FIRST
+    const passwordHash = await sha256(studentPassword);
+
     const studentData = {
-  fatherName,
-  dob,
-  age,
-  weight,
-  aadharNumber,
-  photoBase64,
-  passwordHash,                // ✅ store hashed password
-  createdDate: new Date().toISOString().split("T")[0] // ✅ for attendance % range
-};
+      fatherName,
+      dob,
+      age,
+      weight,
+      aadharNumber,
+      photoBase64,
+      passwordHash, // ✅ ok
+      createdDate: new Date().toISOString().split("T")[0]
+    };
 
-
-const passwordHash = await sha256(studentPassword);
-
-      
     await module.addStudent(name, belt, id, studentData);
 
     alert("✅ Student Added Successfully!");
@@ -1457,15 +1452,16 @@ const passwordHash = await sha256(studentPassword);
     img.src = "";
 
     await loadStudents();
+
   } catch (error) {
     console.error("Add student failed:", error);
     alert("❌ Add student failed: " + (error?.message || error));
   } finally {
     if (btn) btn.disabled = false;
-  }
-
     document.getElementById("studentPassword").value = "";
+  }
 }
+
 
 
 
@@ -1687,6 +1683,9 @@ if (window.location.hash === "#studentView" && savedStudentId) {
         window.switchTab = switchTab;
         window.markAdminAttendance = markAdminAttendance;
         window.deleteAttendanceRecord = deleteAttendanceRecord;
+        window.studentLogin = studentLogin;
+window.studentLogout = studentLogout;
+
     </script>
 </body>
 </html>
