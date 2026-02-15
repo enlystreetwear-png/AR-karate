@@ -529,7 +529,8 @@
 
 <img id="photoPreview" style="display:none;width:100%;max-width:140px;border-radius:10px;margin:10px auto;box-shadow:0 2px 6px rgba(0,0,0,0.12);" />
 
-<button onclick="addStudentUI()">Add Student</button>
+<button onclick="addStudentUI(event)">Add Student</button>
+
 
                 
                 <h3>Student List</h3>
@@ -967,53 +968,73 @@ function switchTab(tabName) {
         }
 
         // Load students for admin
-        async function loadStudents() {
-            try {
-                const module = await import("./assets/app.js");
-                const students = await module.getAllStudents();
-                studentListDiv.innerHTML = "";
-                
-                if (students.length === 0) {
-                    studentListDiv.innerHTML = '<p style="text-align: center; color: #666;">No students added yet.</p>';
-                    return;
-                }
-                
-                students.forEach(student => {
-                    const div = document.createElement("div");
-                    div.className = "student-card";
-                    
-                    const barcodeCanvas = generateBarcode(student.id, student.name);
-                    
-                    div.innerHTML = `
-                        <div class="student-info">
-                            <div class="student-name">${student.name}</div>
-                            <div class="student-id">ID: ${student.id}</div>
-                            <div class="student-belt">Belt: ${student.belt}</div>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="print-btn" onclick="printBarcode('${student.id}', '${student.name}')">
-                                Print Barcode
-                            </button>
-                            <button class="delete-btn" onclick="deleteStudentUI('${student.id}')">
-                                Delete
-                            </button>
-                        </div>
-                    `;
-                    
-                    const barcodeContainer = document.createElement('div');
-                    barcodeContainer.className = 'barcode-container';
-                    barcodeContainer.innerHTML = '<div class="barcode-title">Barcode Preview:</div>';
-                    barcodeContainer.appendChild(barcodeCanvas);
-                    
-                    div.appendChild(barcodeContainer);
-                    studentListDiv.appendChild(div);
-                });
-                
-            } catch (error) {
-                console.error("Error loading students:", error);
-                studentListDiv.innerHTML = `<p class="error-msg">Error loading students: ${error.message}</p>`;
-            }
-        }
+async function loadStudents() {
+  try {
+    const module = await import("./assets/app.js");
+    const students = await module.getAllStudents();
+
+    studentListDiv.innerHTML = "";
+
+    if (students.length === 0) {
+      studentListDiv.innerHTML =
+        '<p style="text-align: center; color: #666;">No students added yet.</p>';
+      return;
+    }
+
+    students.forEach(student => {
+      const div = document.createElement("div");
+      div.className = "student-card";
+
+      const barcodeCanvas = generateBarcode(student.id, student.name);
+
+      // ✅ get photo INSIDE loop
+      const photo = student.photoBase64 || "";
+
+      div.innerHTML = `
+        <div class="student-info">
+
+          ${photo ? `
+            <img src="${photo}"
+                 style="width:70px;height:70px;border-radius:10px;
+                 object-fit:cover;margin-bottom:8px;">
+          ` : ""}
+
+          <div class="student-name">${student.name}</div>
+          <div class="student-id">ID: ${student.id}</div>
+          <div class="student-belt">Belt: ${student.belt}</div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="print-btn"
+            onclick="printBarcode('${student.id}', '${student.name}')">
+            Print Barcode
+          </button>
+
+          <button class="delete-btn"
+            onclick="deleteStudentUI('${student.id}')">
+            Delete
+          </button>
+        </div>
+      `;
+
+      const barcodeContainer = document.createElement("div");
+      barcodeContainer.className = "barcode-container";
+      barcodeContainer.innerHTML =
+        '<div class="barcode-title">Barcode Preview:</div>';
+
+      barcodeContainer.appendChild(barcodeCanvas);
+
+      div.appendChild(barcodeContainer);
+      studentListDiv.appendChild(div);
+    });
+
+  } catch (error) {
+    console.error("Error loading students:", error);
+    studentListDiv.innerHTML =
+      `<p class="error-msg">Error loading students: ${error.message}</p>`;
+  }
+}
+
 
         // Load admin attendance with edit buttons
         async function loadAdminAttendance() {
@@ -1197,13 +1218,13 @@ function previewStudentPhoto(event) {
 
         
         // Add student
-async function addStudentUI() {
+async function addStudentUI(ev) {
   const name = document.getElementById("studentName").value.trim();
   const fatherName = document.getElementById("fatherName").value.trim();
   const dob = document.getElementById("studentDob").value;
   const ageVal = document.getElementById("studentAge").value;
   const weightVal = document.getElementById("studentWeight").value;
-  const aadharNumber = document.getElementById("studentAadhar").value.trim(); // ✅ use aadharNumber
+  const aadharNumber = document.getElementById("studentAadhar").value.trim();
   const belt = document.getElementById("studentBelt").value.trim();
   const id = document.getElementById("studentId").value.trim();
   const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
@@ -1221,17 +1242,22 @@ async function addStudentUI() {
   const age = ageVal ? Number(ageVal) : "";
   const weight = weightVal ? Number(weightVal) : "";
 
-  // disable button to prevent double click
-  const btn = event?.target;
+  const btn = ev?.target;
   if (btn) btn.disabled = true;
 
   try {
     const module = await import("./assets/app.js");
 
-    let photoUrl = "";
+    // ✅ Convert photo to base64 (optional)
+    let photoBase64 = "";
     if (photoFile) {
-      // ✅ show what error is happening
-      photoUrl = await module.uploadStudentPhoto(photoFile, id);
+      photoBase64 = await fileToCompressedBase64(photoFile, 320, 0.7);
+
+      // Firestore doc size limit protection
+      if (photoBase64.length > 700000) {
+        alert("Photo is too large. Please choose a smaller image.");
+        return;
+      }
     }
 
     const studentData = {
@@ -1239,8 +1265,8 @@ async function addStudentUI() {
       dob,
       age,
       weight,
-      aadharNumber, // ✅ correct key
-      photoUrl
+      aadharNumber,
+      photoBase64 // ✅ stored in Firestore
     };
 
     await module.addStudent(name, belt, id, studentData);
@@ -1270,6 +1296,7 @@ async function addStudentUI() {
     if (btn) btn.disabled = false;
   }
 }
+
 
 
 
@@ -1408,6 +1435,35 @@ async function addStudentUI() {
             });
         }
 
+
+        async function fileToCompressedBase64(file, maxSize = 320, quality = 0.7) {
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = URL.createObjectURL(file);
+  });
+
+  const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const base64 = canvas.toDataURL("image/jpeg", quality);
+
+  // Cleanup
+  URL.revokeObjectURL(img.src);
+
+  return base64;
+}
+
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
             try {
