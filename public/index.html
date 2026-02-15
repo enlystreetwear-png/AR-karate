@@ -1197,74 +1197,80 @@ function previewStudentPhoto(event) {
 
         
         // Add student
-        async function addStudentUI() {
-    const name = document.getElementById("studentName").value.trim();
-    const fatherName = document.getElementById("fatherName").value.trim();
-    const dob = document.getElementById("studentDob").value;
-    const age = document.getElementById("studentAge").value ? Number(document.getElementById("studentAge").value) : null;
-    const weight = document.getElementById("studentWeight").value ? Number(document.getElementById("studentWeight").value) : null;
-    const aadhar = document.getElementById("studentAadhar").value.trim();
-    const belt = document.getElementById("studentBelt").value.trim();
-    const id = document.getElementById("studentId").value.trim();
-    const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
+async function addStudentUI() {
+  const name = document.getElementById("studentName").value.trim();
+  const fatherName = document.getElementById("fatherName").value.trim();
+  const dob = document.getElementById("studentDob").value;
+  const ageVal = document.getElementById("studentAge").value;
+  const weightVal = document.getElementById("studentWeight").value;
+  const aadharNumber = document.getElementById("studentAadhar").value.trim(); // ✅ use aadharNumber
+  const belt = document.getElementById("studentBelt").value.trim();
+  const id = document.getElementById("studentId").value.trim();
+  const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
 
-    if (!name || !fatherName || !dob || !belt || !id) {
-        alert("Please fill all required fields (Name, Father Name, DOB, Belt, Student ID)");
-        return;
+  if (!name || !fatherName || !dob || !belt || !id) {
+    alert("Please fill all required fields (Name, Father Name, DOB, Belt, Student ID)");
+    return;
+  }
+
+  if (aadharNumber && !/^\d{12}$/.test(aadharNumber)) {
+    alert("Aadhaar must be exactly 12 digits.");
+    return;
+  }
+
+  const age = ageVal ? Number(ageVal) : "";
+  const weight = weightVal ? Number(weightVal) : "";
+
+  // disable button to prevent double click
+  const btn = event?.target;
+  if (btn) btn.disabled = true;
+
+  try {
+    const module = await import("./assets/app.js");
+
+    let photoUrl = "";
+    if (photoFile) {
+      // ✅ show what error is happening
+      photoUrl = await module.uploadStudentPhoto(photoFile, id);
     }
 
-    // Aadhaar validation (optional but recommended)
-    if (aadhar && !/^\d{12}$/.test(aadhar)) {
-        alert("Aadhaar must be exactly 12 digits.");
-        return;
-    }
+    const studentData = {
+      fatherName,
+      dob,
+      age,
+      weight,
+      aadharNumber, // ✅ correct key
+      photoUrl
+    };
 
-    try {
-        const module = await import("./assets/app.js");
+    await module.addStudent(name, belt, id, studentData);
 
-        // 1) Upload photo (optional)
-        let photoUrl = "";
-        if (photoFile) {
-            // You must add this function in app.js (shown below)
-            photoUrl = await module.uploadStudentPhoto(photoFile, id);
-        }
+    alert("✅ Student Added Successfully!");
 
-        // 2) Save student with extra fields
-        // You must update addStudent in app.js to accept the 4th param (studentData)
-        const studentData = {
-            fatherName,
-            dob,
-            age,
-            weight,
-            aadhar,
-            photoUrl
-        };
+    // clear form
+    document.getElementById("studentName").value = "";
+    document.getElementById("fatherName").value = "";
+    document.getElementById("studentDob").value = "";
+    document.getElementById("studentAge").value = "";
+    document.getElementById("studentWeight").value = "";
+    document.getElementById("studentAadhar").value = "";
+    document.getElementById("studentBelt").value = "";
+    document.getElementById("studentId").value = "";
+    document.getElementById("studentPhoto").value = "";
 
-        await module.addStudent(name, belt, id, studentData);
+    const img = document.getElementById("photoPreview");
+    img.style.display = "none";
+    img.src = "";
 
-        // Clear form
-        document.getElementById("studentName").value = "";
-        document.getElementById("fatherName").value = "";
-        document.getElementById("studentDob").value = "";
-        document.getElementById("studentAge").value = "";
-        document.getElementById("studentWeight").value = "";
-        document.getElementById("studentAadhar").value = "";
-        document.getElementById("studentBelt").value = "";
-        document.getElementById("studentId").value = "";
-        document.getElementById("studentPhoto").value = "";
-        document.getElementById("photoPreview").style.display = "none";
-        document.getElementById("photoPreview").src = "";
-
-        await loadStudents();
-        if (currentAdminTab === "attendanceTab") {
-            await loadAdminAttendance();
-        }
-
-    } catch (error) {
-        console.error("Error adding student:", error);
-        alert("Error adding student: " + error.message);
-    }
+    await loadStudents();
+  } catch (error) {
+    console.error("Add student failed:", error);
+    alert("❌ Add student failed: " + (error?.message || error));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
+
 
 
         // Delete student
