@@ -511,10 +511,26 @@
             <!-- Students Tab -->
             <div id="studentsTab" class="tab-content active">
                 <h3>Add New Student</h3>
-                <input type="text" id="studentName" placeholder="Student Name">
-                <input type="text" id="studentBelt" placeholder="Belt Color">
-                <input type="text" id="studentId" placeholder="Student ID (for barcode)">
-                <button onclick="addStudentUI()">Add Student</button>
+
+<input type="text" id="studentName" placeholder="Student Name">
+<input type="text" id="fatherName" placeholder="Father Name">
+
+<input type="date" id="studentDob" placeholder="Date of Birth" onchange="autoFillAge()">
+<input type="number" id="studentAge" placeholder="Age" min="1" readonly>
+
+<input type="number" id="studentWeight" placeholder="Weight (kg)" min="1" step="0.1">
+
+<input type="text" id="studentAadhar" placeholder="Aadhaar Number (12 digits)" maxlength="12" inputmode="numeric">
+
+<input type="text" id="studentBelt" placeholder="Belt Color">
+<input type="text" id="studentId" placeholder="Student ID (for barcode)">
+
+<input type="file" id="studentPhoto" accept="image/*" onchange="previewStudentPhoto(event)">
+
+<img id="photoPreview" style="display:none;width:100%;max-width:140px;border-radius:10px;margin:10px auto;box-shadow:0 2px 6px rgba(0,0,0,0.12);" />
+
+<button onclick="addStudentUI()">Add Student</button>
+
                 
                 <h3>Student List</h3>
                 <div id="studentList"></div>
@@ -1148,37 +1164,108 @@ function switchTab(tabName) {
             }
         }
 
+        function autoFillAge() {
+    const dob = document.getElementById("studentDob").value;
+    const ageInput = document.getElementById("studentAge");
+    if (!dob) {
+        ageInput.value = "";
+        return;
+    }
+
+    const birth = new Date(dob);
+    const today = new Date();
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    ageInput.value = age > 0 ? age : "";
+}
+
+function previewStudentPhoto(event) {
+    const file = event.target.files?.[0];
+    const img = document.getElementById("photoPreview");
+    if (!file) {
+        img.style.display = "none";
+        img.src = "";
+        return;
+    }
+    img.src = URL.createObjectURL(file);
+    img.style.display = "block";
+}
+
+        
         // Add student
         async function addStudentUI() {
-            const name = document.getElementById("studentName").value.trim();
-            const belt = document.getElementById("studentBelt").value.trim();
-            const id = document.getElementById("studentId").value.trim();
+    const name = document.getElementById("studentName").value.trim();
+    const fatherName = document.getElementById("fatherName").value.trim();
+    const dob = document.getElementById("studentDob").value;
+    const age = document.getElementById("studentAge").value ? Number(document.getElementById("studentAge").value) : null;
+    const weight = document.getElementById("studentWeight").value ? Number(document.getElementById("studentWeight").value) : null;
+    const aadhar = document.getElementById("studentAadhar").value.trim();
+    const belt = document.getElementById("studentBelt").value.trim();
+    const id = document.getElementById("studentId").value.trim();
+    const photoFile = document.getElementById("studentPhoto").files?.[0] || null;
 
-            if (!name || !belt || !id) {
-                alert("Please fill all fields");
-                return;
-            }
+    if (!name || !fatherName || !dob || !belt || !id) {
+        alert("Please fill all required fields (Name, Father Name, DOB, Belt, Student ID)");
+        return;
+    }
 
-            try {
-                const module = await import("./assets/app.js");
-                await module.addStudent(name, belt, id);
-                
-                // Clear form
-                document.getElementById("studentName").value = "";
-                document.getElementById("studentBelt").value = "";
-                document.getElementById("studentId").value = "";
-                
-                // Reload students and attendance
-                await loadStudents();
-                if (currentAdminTab === 'attendanceTab') {
-                    await loadAdminAttendance();
-                }
-                
-            } catch (error) {
-                console.error("Error adding student:", error);
-                alert("Error adding student: " + error.message);
-            }
+    // Aadhaar validation (optional but recommended)
+    if (aadhar && !/^\d{12}$/.test(aadhar)) {
+        alert("Aadhaar must be exactly 12 digits.");
+        return;
+    }
+
+    try {
+        const module = await import("./assets/app.js");
+
+        // 1) Upload photo (optional)
+        let photoUrl = "";
+        if (photoFile) {
+            // You must add this function in app.js (shown below)
+            photoUrl = await module.uploadStudentPhoto(photoFile, id);
         }
+
+        // 2) Save student with extra fields
+        // You must update addStudent in app.js to accept the 4th param (studentData)
+        const studentData = {
+            fatherName,
+            dob,
+            age,
+            weight,
+            aadhar,
+            photoUrl
+        };
+
+        await module.addStudent(name, belt, id, studentData);
+
+        // Clear form
+        document.getElementById("studentName").value = "";
+        document.getElementById("fatherName").value = "";
+        document.getElementById("studentDob").value = "";
+        document.getElementById("studentAge").value = "";
+        document.getElementById("studentWeight").value = "";
+        document.getElementById("studentAadhar").value = "";
+        document.getElementById("studentBelt").value = "";
+        document.getElementById("studentId").value = "";
+        document.getElementById("studentPhoto").value = "";
+        document.getElementById("photoPreview").style.display = "none";
+        document.getElementById("photoPreview").src = "";
+
+        await loadStudents();
+        if (currentAdminTab === "attendanceTab") {
+            await loadAdminAttendance();
+        }
+
+    } catch (error) {
+        console.error("Error adding student:", error);
+        alert("Error adding student: " + error.message);
+    }
+}
+
 
         // Delete student
         async function deleteStudentUI(id) {
