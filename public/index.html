@@ -711,7 +711,7 @@ function switchTab(tabName) {
             loginMsg.className = "info-msg";
             
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 
                 const result = await module.setupUsersSimple();
                 
@@ -753,7 +753,7 @@ function switchTab(tabName) {
             }
 
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 const userCredential = await module.loginUser(email, password);
                 const user = userCredential.user;
                 const role = await module.getUserRole(user.uid);
@@ -787,7 +787,7 @@ function switchTab(tabName) {
             }
             
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 await module.logoutUser();
                 
                 adminView.style.display = "none";
@@ -840,7 +840,7 @@ function switchTab(tabName) {
     table.style.display = "none";
 
     try {
-        const module = await import("./assets/app.js");
+        const module = await import("./assets/app.js?v=2");
 
         const students = await module.getAllStudents();
         const attendanceSnapshot = await module.getTodaysAttendance(selectedDate);
@@ -970,7 +970,7 @@ function switchTab(tabName) {
         // Load students for admin
 async function loadStudents() {
   try {
-    const module = await import("./assets/app.js");
+    const module = await import("./assets/app.js?v=2");
     const students = await module.getAllStudents();
 
     studentListDiv.innerHTML = "";
@@ -1039,7 +1039,7 @@ async function loadStudents() {
         // Load admin attendance with edit buttons
         async function loadAdminAttendance() {
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 
                 // Get all students
                 const students = await module.getAllStudents();
@@ -1126,7 +1126,7 @@ async function loadStudents() {
         // Mark attendance from admin panel
         async function markAdminAttendance(studentId, status) {
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 const today = new Date().toISOString().split("T")[0];
                 
                 if (status === 'present') {
@@ -1163,7 +1163,7 @@ async function loadStudents() {
             if (!confirm(`Are you sure you want to remove attendance record for student ${studentId}?`)) return;
             
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 await module.deleteAttendance(attendanceId);
                 
                 adminAttendanceMsg.innerText = `✅ Attendance record removed for student ${studentId}`;
@@ -1246,7 +1246,7 @@ async function addStudentUI(ev) {
   if (btn) btn.disabled = true;
 
   try {
-    const module = await import("./assets/app.js");
+    const module = await import("./assets/app.js?v=2");
 
     // ✅ Convert photo to base64 (optional)
     let photoBase64 = "";
@@ -1305,7 +1305,7 @@ async function addStudentUI(ev) {
             if (!confirm("Are you sure you want to delete this student?")) return;
             
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 await module.deleteStudent(id);
                 await loadStudents();
                 if (currentAdminTab === 'attendanceTab') {
@@ -1320,7 +1320,7 @@ async function addStudentUI(ev) {
         // Load teacher attendance
         async function loadAttendance() {
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 
                 // Get all students
                 const students = await module.getAllStudents();
@@ -1405,7 +1405,7 @@ async function addStudentUI(ev) {
                     scanMsg.className = "info-msg";
                     
                     try {
-                        const module = await import("./assets/app.js");
+                        const module = await import("./assets/app.js?v=2");
                         
                         await module.markAttendance(decodedText);
                         
@@ -1467,7 +1467,7 @@ async function addStudentUI(ev) {
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                const module = await import("./assets/app.js");
+                const module = await import("./assets/app.js?v=2");
                 if (module.autoRedirect) {
                     module.autoRedirect();
                 }
