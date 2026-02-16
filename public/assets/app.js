@@ -218,3 +218,71 @@ export async function testLogin() {
 }
 
 console.log("Firebase app initialized (no storage, base64 photos)");
+
+// ✅ Get student by id
+export async function getStudentById(id) {
+  const snap = await getDoc(doc(db, "students", id));
+  if (!snap.exists()) return null;
+  return snap.data();
+}
+
+// ✅ SHA256 helper
+async function sha256(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// ✅ Student login check
+export async function verifyStudentLogin(studentId, password) {
+  const student = await getStudentById(studentId);
+  if (!student) return false;
+
+  const incomingHash = await sha256(password);
+  return (student.passwordHash || "") === incomingHash;
+}
+
+// ✅ Attendance % + recent attendance
+export async function getStudentAttendanceStats(studentId, startDate = "") {
+  const today = new Date().toISOString().split("T")[0];
+  const from = startDate || "2000-01-01";
+
+  // present count for this student
+  const studentAttendanceQ = query(
+    collection(db, "attendance"),
+    where("studentId", "==", studentId),
+    where("date", ">=", from),
+    where("date", "<=", today)
+  );
+
+  const studentSnap = await getDocs(studentAttendanceQ);
+  const presentCount = studentSnap.size;
+
+  // recent list (top 15) - client side sort
+  const all = [];
+  studentSnap.forEach(d => all.push(d.data()));
+  all.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  const recent = all.slice(0, 15).map(a => ({
+    date: a.date,
+    time: a.timestamp ? new Date(a.timestamp.toDate()).toLocaleTimeString() : "-"
+  }));
+
+  // total class days = unique dates in attendance collection in range
+  const allAttendanceQ = query(
+    collection(db, "attendance"),
+    where("date", ">=", from),
+    where("date", "<=", today)
+  );
+
+  const allSnap = await getDocs(allAttendanceQ);
+  const dateSet = new Set();
+  allSnap.forEach(d => dateSet.add(d.data().date));
+
+  const totalClasses = dateSet.size;
+
+  return { presentCount, totalClasses, recent };
+}
+
