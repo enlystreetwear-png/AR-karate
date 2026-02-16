@@ -245,44 +245,47 @@ export async function verifyStudentLogin(studentId, password) {
 }
 
 // ✅ Attendance % + recent attendance
-export async function getStudentAttendanceStats(studentId, startDate = "") {
-  const today = new Date().toISOString().split("T")[0];
-  const from = startDate || "2000-01-01";
+export async function getStudentAttendanceStats(studentId, month = "") {
+  // month format: "YYYY-MM" (example "2026-02")
+  const now = new Date();
+  const ym = month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  // present count for this student
+  const monthStart = `${ym}-01`;
+  const monthEnd = `${ym}-31`; // safe for string compare in YYYY-MM-DD
+
+  // ✅ present count for this student in this month
   const studentAttendanceQ = query(
     collection(db, "attendance"),
     where("studentId", "==", studentId),
-    where("date", ">=", from),
-    where("date", "<=", today)
+    where("date", ">=", monthStart),
+    where("date", "<=", monthEnd)
   );
 
   const studentSnap = await getDocs(studentAttendanceQ);
   const presentCount = studentSnap.size;
 
-  // recent list (top 15) - client side sort
+  // ✅ recent records in this month (sorted desc)
   const all = [];
   studentSnap.forEach(d => all.push(d.data()));
   all.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-  const recent = all.slice(0, 15).map(a => ({
+  const recent = all.slice(0, 31).map(a => ({
     date: a.date,
     time: a.timestamp ? new Date(a.timestamp.toDate()).toLocaleTimeString() : "-"
   }));
 
-  // total class days = unique dates in attendance collection in range
+  // ✅ total class days in this month (unique dates from whole attendance collection)
   const allAttendanceQ = query(
     collection(db, "attendance"),
-    where("date", ">=", from),
-    where("date", "<=", today)
+    where("date", ">=", monthStart),
+    where("date", "<=", monthEnd)
   );
 
   const allSnap = await getDocs(allAttendanceQ);
   const dateSet = new Set();
   allSnap.forEach(d => dateSet.add(d.data().date));
-
   const totalClasses = dateSet.size;
 
-  return { presentCount, totalClasses, recent };
+  return { presentCount, totalClasses, recent, month: ym };
 }
 
