@@ -754,7 +754,7 @@ function switchTab(tabName) {
             loginMsg.className = "info-msg";
             
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=3");
                 
                 const result = await module.setupUsersSimple();
                 
