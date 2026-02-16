@@ -754,7 +754,7 @@ function switchTab(tabName) {
             loginMsg.className = "info-msg";
             
             try {
-                const module = await import("./assets/app.js?v=3");
+                const module = await import("./assets/app.js?v=4");
                 
                 const result = await module.setupUsersSimple();
                 
@@ -796,7 +796,7 @@ function switchTab(tabName) {
             }
 
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 const userCredential = await module.loginUser(email, password);
                 const user = userCredential.user;
                 const role = await module.getUserRole(user.uid);
@@ -834,7 +834,7 @@ async function studentLogin() {
   }
 
   try {
-    const module = await import("./assets/app.js?v=2");
+    const module = await import("./assets/app.js?v=4");
     const ok = await module.verifyStudentLogin(id, pass);
 
     if (!ok) {
@@ -864,7 +864,7 @@ async function showStudentView(studentId) {
 }
 
 async function loadStudentProfile(studentId) {
-  const module = await import("./assets/app.js?v=2");
+  const module = await import("./assets/app.js?v=4");
   const student = await module.getStudentById(studentId);
 
   if (!student) {
@@ -889,17 +889,25 @@ async function loadStudentProfile(studentId) {
   `;
 
   // Attendance stats
-  const stats = await module.getStudentAttendanceStats(studentId, student.createdDate || "");
+  // ✅ Monthly Attendance stats
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; // YYYY-MM
+
+  const stats = await module.getStudentAttendanceStats(studentId, ym);
   const pct = stats.totalClasses > 0 ? Math.round((stats.presentCount / stats.totalClasses) * 100) : 0;
 
   document.getElementById("studentAttendanceBox").innerHTML = `
+    <p style="text-align:center;margin:0 0 8px 0;color:#333;font-weight:bold;">
+      Attendance for <span style="color:#1a73e8">${stats.month}</span>
+    </p>
     <div style="background:#f3f3f3;border-radius:10px;overflow:hidden;height:14px;">
       <div style="width:${pct}%;height:14px;background:#1a73e8;"></div>
     </div>
     <p style="text-align:center;margin:8px 0;color:#333;">
-      Attendance: <b>${pct}%</b> (${stats.presentCount}/${stats.totalClasses})
+      <b>${pct}%</b> (${stats.presentCount}/${stats.totalClasses})
     </p>
   `;
+
 
   // Recent attendance table
   const tbody = document.querySelector("#studentAttendanceTable tbody");
@@ -942,7 +950,7 @@ function studentLogout() {
             }
             
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 await module.logoutUser();
                 
                 adminView.style.display = "none";
@@ -995,7 +1003,7 @@ function studentLogout() {
     table.style.display = "none";
 
     try {
-        const module = await import("./assets/app.js?v=2");
+        const module = await import("./assets/app.js?v=4");
 
         const students = await module.getAllStudents();
         const attendanceSnapshot = await module.getTodaysAttendance(selectedDate);
@@ -1125,7 +1133,7 @@ function studentLogout() {
         // Load students for admin
 async function loadStudents() {
   try {
-    const module = await import("./assets/app.js?v=2");
+    const module = await import("./assets/app.js?v=4");
     const students = await module.getAllStudents();
 
     studentListDiv.innerHTML = "";
@@ -1194,7 +1202,7 @@ async function loadStudents() {
         // Load admin attendance with edit buttons
         async function loadAdminAttendance() {
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 
                 // Get all students
                 const students = await module.getAllStudents();
@@ -1281,7 +1289,7 @@ async function loadStudents() {
         // Mark attendance from admin panel
         async function markAdminAttendance(studentId, status) {
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 const today = new Date().toISOString().split("T")[0];
                 
                 if (status === 'present') {
@@ -1318,7 +1326,7 @@ async function loadStudents() {
             if (!confirm(`Are you sure you want to remove attendance record for student ${studentId}?`)) return;
             
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 await module.deleteAttendance(attendanceId);
                 
                 adminAttendanceMsg.innerText = `✅ Attendance record removed for student ${studentId}`;
@@ -1407,7 +1415,7 @@ async function addStudentUI(ev) {
   if (btn) btn.disabled = true;
 
   try {
-    const module = await import("./assets/app.js?v=2");
+    const module = await import("./assets/app.js?v=4");
 
     let photoBase64 = "";
     if (photoFile) {
@@ -1471,7 +1479,7 @@ async function addStudentUI(ev) {
             if (!confirm("Are you sure you want to delete this student?")) return;
             
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 await module.deleteStudent(id);
                 await loadStudents();
                 if (currentAdminTab === 'attendanceTab') {
@@ -1486,7 +1494,7 @@ async function addStudentUI(ev) {
         // Load teacher attendance
         async function loadAttendance() {
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 
                 // Get all students
                 const students = await module.getAllStudents();
@@ -1571,7 +1579,7 @@ async function addStudentUI(ev) {
                     scanMsg.className = "info-msg";
                     
                     try {
-                        const module = await import("./assets/app.js?v=2");
+                        const module = await import("./assets/app.js?v=4");
                         
                         await module.markAttendance(decodedText);
                         
@@ -1646,7 +1654,7 @@ if (window.location.hash === "#studentView" && savedStudentId) {
 }
 
             try {
-                const module = await import("./assets/app.js?v=2");
+                const module = await import("./assets/app.js?v=4");
                 if (module.autoRedirect) {
                     module.autoRedirect();
                 }
